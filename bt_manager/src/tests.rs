@@ -140,6 +140,8 @@ mod tests {
             10.0,
         );
 
+        tree_manager.define_after_event(|| println!("after event"));
+
         println!("Result: {:?}", tree_manager.work());
     }
 }
