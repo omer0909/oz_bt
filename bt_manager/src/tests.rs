@@ -126,7 +126,7 @@ mod tests {
     fn reactive_node() {
         let mut tree_manager = TreeManager::new(
             Reactive::new(
-                vec![EventNode::new(|| {
+                vec![EventNode::new("print".to_string(), || {
                     println!("kontrol edildi!");
                     true
                 })],

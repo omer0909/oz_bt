@@ -29,7 +29,7 @@ impl Executable for AsyncWait {
             }
         }
 
-        if self.running.iter().all(|x| !*x) {
+        if self.running.iter().all(|&x| !x) {
             return States::Succes;
         }
 
