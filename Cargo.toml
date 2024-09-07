@@ -1,0 +1,2 @@
+[workspace]
+members = ["bt_manager", "bt_manager_macro"]
