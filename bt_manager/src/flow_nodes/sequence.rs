@@ -2,10 +2,14 @@ use crate::exec::{
     Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
 };
 
+struct NodeData {
+    node: Box<dyn ExecutableAndWatch>,
+    watch_state: WatchState,
+}
+
 pub struct Sequence {
-    nodes: Vec<Box<dyn ExecutableAndWatch>>,
+    nodes: Vec<NodeData>,
     counter: usize,
-    working: bool,
 }
 
 impl Executable for Sequence {
@@ -21,18 +25,22 @@ impl Executable for Sequence {
 
             let node = &mut self.nodes[self.counter];
 
-            if !self.working {
-                self.working = true;
-                node.start();
+            if node.watch_state != WatchState::Running {
+                node.node.start();
+                node.watch_state = WatchState::Running;
             }
 
-            let state = node.execute(dt);
+            let state = node.node.execute(dt);
 
             if state == States::Running {
                 return States::Running;
             } else {
-                node.end();
-                self.working = false;
+                node.node.end();
+                if state == States::Succes {
+                    node.watch_state = WatchState::Succeeded;
+                } else {
+                    node.watch_state = WatchState::Failed;
+                }
             }
 
             if state == States::Succes {
@@ -46,19 +54,31 @@ impl Executable for Sequence {
     }
 
     fn end(&mut self) {
-        if self.working {
-            self.working = false;
-            self.nodes[self.counter].end();
+        println!("aaaaaaaaaaaa");
+        if self.counter < self.nodes.len() {
+            let node = &mut self.nodes[self.counter];
+
+            if node.watch_state == WatchState::Running {
+                node.node.end();
+                node.watch_state = WatchState::Cancelled;
+            }
         }
     }
 }
 
 impl ExecutableWatch for Sequence {
     fn get_content(&self) -> WatchContent {
-        let childs = self.nodes.iter().map(|x| x.get_content()).collect();
+        let childs = self
+            .nodes
+            .iter()
+            .map(|x| WatchContent {
+                watch_state: x.watch_state,
+                ..x.node.get_content()
+            })
+            .collect();
 
         WatchContent {
-            name: "sequence".to_string(),
+            name: "async_wait".to_string(),
             watch_state: WatchState::None,
             childs: childs,
         }
@@ -68,9 +88,14 @@ impl ExecutableWatch for Sequence {
 impl Sequence {
     pub fn new(nodes: Vec<Box<dyn ExecutableAndWatch>>) -> Box<Self> {
         Box::new(Sequence {
-            nodes: nodes,
+            nodes: nodes
+                .into_iter()
+                .map(|node| NodeData {
+                    node: node,
+                    watch_state: WatchState::None,
+                })
+                .collect(),
             counter: 0,
-            working: false,
         })
     }
 }
