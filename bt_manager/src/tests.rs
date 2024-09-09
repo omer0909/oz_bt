@@ -98,7 +98,7 @@ mod tests {
     fn tree() {
         let input = Rc::new(RefCell::new(2.0));
         let mut tree_manager = TreeManager::new(
-            AsyncWait::new(vec![
+            AsyncFirst::new(vec![
                 sleep::lib::NodeManager::new(
                     sleep::lib::InputsHandles {
                         time: Box::new(move || *input.borrow_mut()),
@@ -129,6 +129,10 @@ mod tests {
                 serde_json::to_string_pretty(&tree_manager.get_content()).unwrap()
             )
         }
+        println!(
+            "tree: {}",
+            serde_json::to_string_pretty(&tree_manager.get_content()).unwrap()
+        )
     }
 
     // #[test]
