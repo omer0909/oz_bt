@@ -1,6 +1,4 @@
-use crate::exec::{
-    Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
-};
+use crate::exec::{Executable, ExecutableWatch, States, WatchContent, WatchState};
 
 pub struct EventNode {
     event: Box<dyn Fn() -> bool>,

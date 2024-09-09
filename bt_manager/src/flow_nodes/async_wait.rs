@@ -2,34 +2,44 @@ use crate::exec::{
     Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
 };
 
+struct NodeData {
+    node: Box<dyn ExecutableAndWatch>,
+    watch_state: WatchState,
+}
+
 pub struct AsyncWait {
-    nodes: Vec<Box<dyn ExecutableAndWatch>>,
-    running: Vec<bool>,
+    nodes: Vec<NodeData>,
 }
 
 impl Executable for AsyncWait {
     fn start(&mut self) {
         for node in &mut self.nodes {
-            node.start();
+            node.node.start();
+            node.watch_state = WatchState::Running;
         }
-        self.running.fill(true);
     }
 
     fn execute(&mut self, dt: f32) -> States {
-        for (node, running) in self.nodes.iter_mut().zip(self.running.iter_mut()) {
-            if *running {
-                let state = node.execute(dt);
+        for node in &mut self.nodes {
+            if node.watch_state == WatchState::Running {
+                let state = node.node.execute(dt);
                 if state != States::Running {
-                    *running = false;
-                    node.end();
+                    node.node.end();
                     if state == States::Fail {
+                        node.watch_state = WatchState::Failed;
                         return States::Fail;
+                    } else {
+                        node.watch_state = WatchState::Succeeded;
                     }
                 }
             }
         }
 
-        if self.running.iter().all(|&x| !x) {
+        if self
+            .nodes
+            .iter()
+            .all(|x| x.watch_state != WatchState::Running)
+        {
             return States::Succes;
         }
 
@@ -37,9 +47,10 @@ impl Executable for AsyncWait {
     }
 
     fn end(&mut self) {
-        for (node, running) in self.nodes.iter_mut().zip(self.running.iter_mut()) {
-            if *running {
-                node.end();
+        for node in &mut self.nodes {
+            if node.watch_state == WatchState::Running {
+                node.node.end();
+                node.watch_state = WatchState::Cancelled;
             }
         }
     }
@@ -47,7 +58,14 @@ impl Executable for AsyncWait {
 
 impl ExecutableWatch for AsyncWait {
     fn get_content(&self) -> WatchContent {
-        let childs = self.nodes.iter().map(|x| x.get_content()).collect();
+        let childs = self
+            .nodes
+            .iter()
+            .map(|x| WatchContent {
+                watch_state: x.watch_state,
+                ..x.node.get_content()
+            })
+            .collect();
 
         WatchContent {
             name: "async_wait".to_string(),
@@ -59,10 +77,14 @@ impl ExecutableWatch for AsyncWait {
 
 impl AsyncWait {
     pub fn new(nodes: Vec<Box<dyn ExecutableAndWatch>>) -> Box<Self> {
-        let size = nodes.len();
         Box::new(AsyncWait {
-            nodes: nodes,
-            running: vec![false; size],
+            nodes: nodes
+                .into_iter()
+                .map(|node| NodeData {
+                    node: node,
+                    watch_state: WatchState::None,
+                })
+                .collect(),
         })
     }
 }

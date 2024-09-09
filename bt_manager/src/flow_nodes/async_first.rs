@@ -1,6 +1,11 @@
 use crate::exec::{
-    self, Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
+    Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
 };
+
+struct NodeData {
+    node: Box<dyn ExecutableAndWatch>,
+    watch_state: WatchState,
+}
 
 pub struct AsyncFirst {
     nodes: Vec<Box<dyn ExecutableAndWatch>>,

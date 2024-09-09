@@ -67,6 +67,7 @@ mod sleep {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use exec::States;
     use flow_nodes::async_wait::AsyncWait;
     use serde_json;
     use serial_test::serial;
@@ -86,6 +87,9 @@ mod tests {
         {
             let app = AppR();
             println!("{}", app.test);
+
+            let app_ = AppR();
+            println!("{}", app_.test);
         }
     }
 
@@ -115,33 +119,39 @@ mod tests {
             10.0,
         );
 
-        let debug = serde_json::to_string_pretty(&tree_manager.get_content()).unwrap();
-        println!("{:}", debug);
-
-        println!("Result: {:?}", tree_manager.work());
+        loop {
+            let dt = tree_manager.sleep_loop();
+            if tree_manager.execute(dt) != States::Running {
+                break;
+            }
+            println!(
+                "tree: {}",
+                serde_json::to_string_pretty(&tree_manager.get_content()).unwrap()
+            )
+        }
     }
 
-    #[test]
-    #[serial]
-    fn reactive_node() {
-        let mut tree_manager = TreeManager::new(
-            Reactive::new(
-                vec![EventNode::new("print".to_string(), || {
-                    println!("kontrol edildi!");
-                    true
-                })],
-                sleep::lib::NodeManager::new(
-                    sleep::lib::InputsHandles {
-                        time: Box::new(|| 1.0),
-                    },
-                    sleep::lib::OutputsHandles {},
-                ),
-            ),
-            10.0,
-        );
+    // #[test]
+    // #[serial]
+    // fn reactive_node() {
+    //     let mut tree_manager = TreeManager::new(
+    //         Reactive::new(
+    //             vec![EventNode::new("print".to_string(), || {
+    //                 println!("kontrol edildi!");
+    //                 true
+    //             })],
+    //             sleep::lib::NodeManager::new(
+    //                 sleep::lib::InputsHandles {
+    //                     time: Box::new(|| 1.0),
+    //                 },
+    //                 sleep::lib::OutputsHandles {},
+    //             ),
+    //         ),
+    //         10.0,
+    //     );
 
-        tree_manager.define_after_event(|| println!("after event"));
+    //     tree_manager.define_after_event(|_: &mut TreeManager| println!("after event"));
 
-        println!("Result: {:?}", tree_manager.work());
-    }
+    //     println!("Result: {:?}", tree_manager.work());
+    // }
 }

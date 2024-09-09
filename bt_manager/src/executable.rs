@@ -1,13 +1,12 @@
 pub mod exec {
     use serde::{Deserialize, Serialize};
 
-    #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+    #[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone, Copy)]
     pub enum WatchState {
         Running,
         Succeeded,
         Failed,
         Cancelled,
-        Sleeping,
         None,
     }
 
@@ -18,7 +17,7 @@ pub mod exec {
         pub childs: Vec<WatchContent>,
     }
 
-    #[derive(PartialEq, Eq, Debug, Serialize, Deserialize)]
+    #[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone, Copy)]
     pub enum States {
         Running,
         Succes,
