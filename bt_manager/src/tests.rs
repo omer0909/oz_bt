@@ -1,38 +1,8 @@
-use once_cell::sync::OnceCell;
-use std::sync::RwLock;
-
 use crate::*;
-
-#[derive(Default)]
-struct App {
-    pub test: i32,
-}
-
-static APP_INSTANCE: OnceCell<RwLock<App>> = OnceCell::new();
-
-pub fn initialize_app() {
-    let _ = APP_INSTANCE.set(RwLock::new(App { test: 0 }));
-}
-
-pub fn AppW() -> std::sync::RwLockWriteGuard<'static, App> {
-    APP_INSTANCE
-        .get()
-        .expect("App not initialized")
-        .write()
-        .unwrap()
-}
-
-pub fn AppR() -> std::sync::RwLockReadGuard<'static, App> {
-    APP_INSTANCE
-        .get()
-        .expect("App not initialized")
-        .read()
-        .unwrap()
-}
 
 #[node]
 mod sleep {
-    use crate::exec::{Executable, States, WatchContent};
+    use crate::exec::{Executable, States};
 
     struct Input {
         time: f32,
@@ -68,7 +38,6 @@ mod sleep {
 mod tests {
     use super::*;
     use exec::States;
-    use flow_nodes::async_wait::AsyncWait;
     use serde_json;
     use serial_test::serial;
     use std::cell::RefCell;
@@ -76,28 +45,9 @@ mod tests {
 
     #[test]
     #[serial]
-    fn global() {
-        initialize_app();
-
-        {
-            let mut app = AppW();
-            app.test = 42;
-        }
-
-        {
-            let app = AppR();
-            println!("{}", app.test);
-
-            let app_ = AppR();
-            println!("{}", app_.test);
-        }
-    }
-
-    #[test]
-    #[serial]
     fn tree() {
         let input = Rc::new(RefCell::new(2.0));
-        let mut tree_manager = TreeManager::new(
+        let mut tree_manager: TreeManager = TreeManager::new(
             Sequence::new(vec![
                 sleep::lib::NodeManager::new(
                     sleep::lib::InputsHandles {

@@ -15,7 +15,7 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let add_data_node_struct = |item_struct: &mut ItemStruct| {
         if let Fields::Named(ref mut fields_named) = item_struct.fields {
             let new_field: Field = syn::parse_quote! {
-                pub node_data: Option<std::rc::Rc<std::cell::RefCell<lib::NodeData>>>
+                pub node_data: lib::NodeDataPtr
             };
             fields_named.named.push(new_field);
         }
@@ -53,7 +53,7 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
                 quote! {
                     fn #fn_name(&self) -> #field_type {
-                        self.node_data.as_ref().unwrap().borrow().inputs.as_ref().unwrap().#field_name.clone()
+                        unsafe{(*self.node_data.0).inputs.as_ref().unwrap().#field_name.clone()}
                     }
                 }
             })
@@ -73,7 +73,7 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
                 quote! {
                     fn #fn_name(& mut self, data : #field_type) {
-                        *self.node_data.as_mut().unwrap().borrow_mut().outputs.#field_name.borrow_mut() = data;
+                        *unsafe{(*self.node_data.0).outputs.#field_name.borrow_mut() = data;}
                     }
                 }
             })
@@ -145,17 +145,17 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
             pub mod lib{
                 impl NodeManager{
                     pub fn get_all_inputs(&mut self) {
-                        self.node_data.borrow_mut().inputs = Some(super::Input {
+                        self.node_data.inputs = Some(super::Input {
                             #input_data_get
                         });
                     }
 
                     pub fn new(inputs : InputsHandles, outputs : OutputsHandles) -> Box<Self>{
                         Box::new(NodeManager {
-                            node_data: std::rc::Rc::new(std::cell::RefCell::new(NodeData {
+                            node_data: NodeData {
                                 inputs: None,
                                 outputs: outputs,
-                            })),
+                            },
                             input_handles: inputs,
                             node: None,
                         })
@@ -175,16 +175,24 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     pub outputs : OutputsHandles,
                 }
 
+                pub struct NodeDataPtr(pub *mut NodeData);
+
+                impl Default for NodeDataPtr {
+                    fn default() -> Self {
+                        NodeDataPtr(std::ptr::null_mut())
+                    }
+                }
+
                 pub struct NodeManager {
                     pub input_handles : InputsHandles,
-                    pub node_data : std::rc::Rc<std::cell::RefCell<NodeData>>,
+                    pub node_data : NodeData,
                     pub node : Option<Box<dyn crate::executable::exec::Executable>>
                 }
 
                 impl crate::executable::exec::Executable for NodeManager {
                     fn start(&mut self) {
                         self.node = Some(Box::new(super::Node {
-                            node_data: Some(std::rc::Rc::clone(&self.node_data)),
+                            node_data: NodeDataPtr(&mut self.node_data),
                             ..super::Node::default()
                         }));
                         self.get_all_inputs();
