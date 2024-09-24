@@ -2,22 +2,22 @@ use crate::exec::{
     Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
 };
 
-struct NodeData {
-    node: Box<dyn ExecutableAndWatch>,
+struct NodeData<T> {
+    node: Box<dyn ExecutableAndWatch<T>>,
     watch_state: WatchState,
 }
 
-pub struct Sequence {
-    nodes: Vec<NodeData>,
+pub struct Sequence<T> {
+    nodes: Vec<NodeData<T>>,
     counter: usize,
 }
 
-impl Executable for Sequence {
-    fn start(&mut self) {
+impl<T> Executable<T> for Sequence<T> {
+    fn start(&mut self, _: &mut T) {
         self.counter = 0;
     }
 
-    fn execute(&mut self, dt: f32) -> States {
+    fn execute(&mut self, data: &mut T) -> States {
         loop {
             if self.counter >= self.nodes.len() {
                 return States::Succes;
@@ -26,16 +26,16 @@ impl Executable for Sequence {
             let node = &mut self.nodes[self.counter];
 
             if node.watch_state != WatchState::Running {
-                node.node.start();
+                node.node.start(data);
                 node.watch_state = WatchState::Running;
             }
 
-            let state = node.node.execute(dt);
+            let state = node.node.execute(data);
 
             if state == States::Running {
                 return States::Running;
             } else {
-                node.node.end();
+                node.node.end(data);
                 if state == States::Succes {
                     node.watch_state = WatchState::Succeeded;
                 } else {
@@ -53,20 +53,19 @@ impl Executable for Sequence {
         }
     }
 
-    fn end(&mut self) {
-        println!("aaaaaaaaaaaa");
+    fn end(&mut self, data: &mut T) {
         if self.counter < self.nodes.len() {
             let node = &mut self.nodes[self.counter];
 
             if node.watch_state == WatchState::Running {
-                node.node.end();
+                node.node.end(data);
                 node.watch_state = WatchState::Cancelled;
             }
         }
     }
 }
 
-impl ExecutableWatch for Sequence {
+impl<T> ExecutableWatch for Sequence<T> {
     fn get_content(&self) -> WatchContent {
         let childs = self
             .nodes
@@ -85,8 +84,8 @@ impl ExecutableWatch for Sequence {
     }
 }
 
-impl Sequence {
-    pub fn new(nodes: Vec<Box<dyn ExecutableAndWatch>>) -> Box<Self> {
+impl<T> Sequence<T> {
+    pub fn new(nodes: Vec<Box<dyn ExecutableAndWatch<T>>>) -> Box<Self> {
         Box::new(Sequence {
             nodes: nodes
                 .into_iter()

@@ -2,22 +2,22 @@ use crate::exec::{
     Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
 };
 
-struct NodeData {
-    node: Box<dyn ExecutableAndWatch>,
+struct NodeData<T> {
+    node: Box<dyn ExecutableAndWatch<T>>,
     watch_state: WatchState,
 }
 
-pub struct Reactive {
-    requirements: Vec<NodeData>,
-    node: NodeData,
+pub struct Reactive<T> {
+    requirements: Vec<NodeData<T>>,
+    node: NodeData<T>,
 }
 
-impl Executable for Reactive {
-    fn execute(&mut self, dt: f32) -> States {
+impl<T> Executable<T> for Reactive<T> {
+    fn execute(&mut self, data: &mut T) -> States {
         for node in &mut self.requirements {
-            node.node.start();
-            let state = node.node.execute(dt);
-            node.node.end();
+            node.node.start(data);
+            let state = node.node.execute(data);
+            node.node.end(data);
             if state != States::Succes {
                 if state == States::Fail {
                     node.watch_state = WatchState::Failed;
@@ -31,20 +31,20 @@ impl Executable for Reactive {
 
         if self.node.watch_state != WatchState::Running {
             self.node.watch_state = WatchState::Running;
-            self.node.node.start();
+            self.node.node.start(data);
         }
-        self.node.node.execute(dt)
+        self.node.node.execute(data)
     }
 
-    fn end(&mut self) {
+    fn end(&mut self, data: &mut T) {
         if self.node.watch_state == WatchState::Running {
-            self.node.node.end();
+            self.node.node.end(data);
             self.node.watch_state = WatchState::Cancelled;
         }
     }
 }
 
-impl ExecutableWatch for Reactive {
+impl<T> ExecutableWatch for Reactive<T> {
     fn get_content(&self) -> WatchContent {
         let mut childs: Vec<WatchContent> = self
             .requirements
@@ -68,10 +68,10 @@ impl ExecutableWatch for Reactive {
     }
 }
 
-impl Reactive {
+impl<T> Reactive<T> {
     pub fn new(
-        requirements: Vec<Box<dyn ExecutableAndWatch>>,
-        node: Box<dyn ExecutableAndWatch>,
+        requirements: Vec<Box<dyn ExecutableAndWatch<T>>>,
+        node: Box<dyn ExecutableAndWatch<T>>,
     ) -> Box<Self> {
         Box::new(Reactive {
             requirements: requirements

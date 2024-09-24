@@ -1,15 +1,15 @@
 use crate::exec::{self, States, WatchState};
 use std::time::{Duration, Instant};
 
-pub struct TreeManager {
-    node: Box<dyn exec::ExecutableAndWatch>,
+pub struct TreeManager<T> {
+    node: Box<dyn exec::ExecutableAndWatch<T>>,
     last: Instant,
     loop_wait: f32,
     watch_state: WatchState,
 }
 
-impl TreeManager {
-    pub fn new(node: Box<dyn exec::ExecutableAndWatch>, loop_rate: f32) -> Self {
+impl<T> TreeManager<T> {
+    pub fn new(node: Box<dyn exec::ExecutableAndWatch<T>>, loop_rate: f32) -> Self {
         TreeManager {
             node: node,
             last: Instant::now(),
@@ -32,16 +32,16 @@ impl TreeManager {
         dt
     }
 
-    pub fn execute(&mut self, dt: f32) -> States {
+    pub fn execute(&mut self, data: &mut T) -> States {
         if self.watch_state != WatchState::Running {
-            self.node.start();
+            self.node.start(data);
             self.watch_state = WatchState::Running;
         }
 
-        let status = self.node.execute(dt);
+        let status = self.node.execute(data);
 
         if status != States::Running {
-            self.node.end();
+            self.node.end(data);
             if status == States::Succes {
                 self.watch_state = WatchState::Succeeded;
             } else {
@@ -51,9 +51,9 @@ impl TreeManager {
         status
     }
 
-    pub fn cancel(&mut self) {
+    pub fn cancel(&mut self, data: &mut T) {
         if self.watch_state == WatchState::Running {
-            self.node.end();
+            self.node.end(data);
             self.watch_state = WatchState::Cancelled;
         }
     }

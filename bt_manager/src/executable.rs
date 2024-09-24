@@ -24,16 +24,16 @@ pub mod exec {
         Fail,
     }
 
-    pub trait Executable {
-        fn start(&mut self) {}
-        fn execute(&mut self, dt: f32) -> States;
-        fn end(&mut self) {}
+    pub trait Executable<T> {
+        fn start(&mut self, _: &mut T) {}
+        fn execute(&mut self, _: &mut T) -> States;
+        fn end(&mut self, _: &mut T) {}
     }
 
     pub trait ExecutableWatch {
         fn get_content(&self) -> WatchContent;
     }
 
-    pub trait ExecutableAndWatch: Executable + ExecutableWatch {}
-    impl<T: Executable + ExecutableWatch> ExecutableAndWatch for T {}
+    pub trait ExecutableAndWatch<T>: Executable<T> + ExecutableWatch {}
+    impl<T, C> ExecutableAndWatch<C> for T where T: Executable<C> + ExecutableWatch {}
 }

@@ -2,22 +2,22 @@ use crate::exec::{
     Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
 };
 
-struct NodeData {
-    node: Box<dyn ExecutableAndWatch>,
+struct NodeData<T> {
+    node: Box<dyn ExecutableAndWatch<T>>,
     watch_state: WatchState,
 }
 
-pub struct Fallback {
-    nodes: Vec<NodeData>,
+pub struct Fallback<T> {
+    nodes: Vec<NodeData<T>>,
     counter: usize,
 }
 
-impl Executable for Fallback {
-    fn start(&mut self) {
+impl<T> Executable<T> for Fallback<T> {
+    fn start(&mut self, _: &mut T) {
         self.counter = 0;
     }
 
-    fn execute(&mut self, dt: f32) -> States {
+    fn execute(&mut self, data: &mut T) -> States {
         loop {
             if self.counter >= self.nodes.len() {
                 return States::Fail;
@@ -26,16 +26,16 @@ impl Executable for Fallback {
             let node = &mut self.nodes[self.counter];
 
             if node.watch_state != WatchState::Running {
-                node.node.start();
+                node.node.start(data);
                 node.watch_state = WatchState::Running;
             }
 
-            let state = node.node.execute(dt);
+            let state = node.node.execute(data);
 
             if state == States::Running {
                 return States::Running;
             } else {
-                node.node.end();
+                node.node.end(data);
                 if state == States::Succes {
                     node.watch_state = WatchState::Succeeded;
                 } else {
@@ -53,17 +53,17 @@ impl Executable for Fallback {
         }
     }
 
-    fn end(&mut self) {
+    fn end(&mut self, data: &mut T) {
         let node = &mut self.nodes[self.counter];
 
         if node.watch_state == WatchState::Running {
-            node.node.end();
+            node.node.end(data);
             node.watch_state = WatchState::Cancelled;
         }
     }
 }
 
-impl ExecutableWatch for Fallback {
+impl<T> ExecutableWatch for Fallback<T> {
     fn get_content(&self) -> WatchContent {
         let childs = self
             .nodes
@@ -82,8 +82,8 @@ impl ExecutableWatch for Fallback {
     }
 }
 
-impl Fallback {
-    pub fn new(nodes: Vec<Box<dyn ExecutableAndWatch>>) -> Box<Self> {
+impl<T> Fallback<T> {
+    pub fn new(nodes: Vec<Box<dyn ExecutableAndWatch<T>>>) -> Box<Self> {
         Box::new(Fallback {
             nodes: nodes
                 .into_iter()

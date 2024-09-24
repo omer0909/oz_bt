@@ -1,34 +1,40 @@
 use crate::*;
 
+struct MyData {
+    dt: f32,
+}
+
 #[node]
 mod sleep {
-    use crate::exec::{Executable, States};
+    type Data = super::MyData;
 
-    struct Input {
-        time: f32,
+    pub struct Input {
+        pub time: f32,
     }
+
+    pub struct Output {}
 
     #[derive(Default)]
     pub struct Node {
         elapsed: f32,
     }
 
-    impl Executable for Node {
-        fn start(&mut self) {
+    impl CustomNode for Node {
+        fn start(&mut self, _: &mut CustomData) {
             println!("started");
         }
 
-        fn execute(&mut self, dt: f32) -> crate::exec::States {
-            self.elapsed += dt;
-            println!("{}", dt);
+        fn execute(&mut self, data: &mut CustomData) -> crate::exec::States {
+            self.elapsed += data.data.dt;
+            println!("{}", data.data.dt);
 
-            if self.elapsed > self.get_time() {
-                return States::Succes;
+            if self.elapsed > data.input.time {
+                return crate::exec::States::Succes;
             }
-            States::Running
+            crate::exec::States::Running
         }
 
-        fn end(&mut self) {
+        fn end(&mut self, _: &mut CustomData) {
             println!("ended");
         }
     }
@@ -46,23 +52,23 @@ mod tests {
     #[test]
     #[serial]
     fn tree() {
+        let mut data = MyData { dt: 1.0 };
+
         let input = Rc::new(RefCell::new(2.0));
-        let mut tree_manager: TreeManager = TreeManager::new(
+        let mut tree_manager: TreeManager<MyData> = TreeManager::new(
             Sequence::new(vec![
                 sleep::lib::NodeManager::new(
-                    sleep::lib::InputsHandles {
-                        time: Box::new(move || *input.borrow_mut()),
-                    },
-                    sleep::lib::OutputsHandles {},
+                    |_| sleep::Input { time: 1.0 },
+                    Rc::new(RefCell::new(sleep::Output {})),
                 ),
                 sleep::lib::NodeManager::new(
-                    sleep::lib::InputsHandles {
-                        time: Box::new(|| 1.0),
+                    move |_| sleep::Input {
+                        time: *input.borrow(),
                     },
-                    sleep::lib::OutputsHandles {},
+                    Rc::new(RefCell::new(sleep::Output {})),
                 ),
-                EventNode::new("printer".to_string(), || {
-                    println!("yazdırıldı!");
+                EventNode::new("printer".to_string(), |data: &mut MyData| {
+                    println!("yazdırıldı! {}", data.dt);
                     true
                 }),
             ]),
@@ -70,8 +76,8 @@ mod tests {
         );
 
         loop {
-            let dt = tree_manager.sleep_loop();
-            if tree_manager.execute(dt) != States::Running {
+            data.dt = tree_manager.sleep_loop();
+            if tree_manager.execute(&mut data) != States::Running {
                 break;
             }
             println!(
@@ -84,28 +90,4 @@ mod tests {
             serde_json::to_string_pretty(&tree_manager.get_content()).unwrap()
         )
     }
-
-    // #[test]
-    // #[serial]
-    // fn reactive_node() {
-    //     let mut tree_manager = TreeManager::new(
-    //         Reactive::new(
-    //             vec![EventNode::new("print".to_string(), || {
-    //                 println!("kontrol edildi!");
-    //                 true
-    //             })],
-    //             sleep::lib::NodeManager::new(
-    //                 sleep::lib::InputsHandles {
-    //                     time: Box::new(|| 1.0),
-    //                 },
-    //                 sleep::lib::OutputsHandles {},
-    //             ),
-    //         ),
-    //         10.0,
-    //     );
-
-    //     tree_manager.define_after_event(|_: &mut TreeManager| println!("after event"));
-
-    //     println!("Result: {:?}", tree_manager.work());
-    // }
 }

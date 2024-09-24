@@ -2,26 +2,26 @@ use crate::exec::{
     Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
 };
 
-struct NodeData {
-    node: Box<dyn ExecutableAndWatch>,
+struct NodeData<T> {
+    node: Box<dyn ExecutableAndWatch<T>>,
     watch_state: WatchState,
 }
 
-pub struct AsyncFirst {
-    nodes: Vec<NodeData>,
+pub struct AsyncFirst<T> {
+    nodes: Vec<NodeData<T>>,
 }
 
-impl Executable for AsyncFirst {
-    fn start(&mut self) {
+impl<T> Executable<T> for AsyncFirst<T> {
+    fn start(&mut self, data: &mut T) {
         for node in &mut self.nodes {
-            node.node.start();
+            node.node.start(data);
             node.watch_state = WatchState::Running;
         }
     }
 
-    fn execute(&mut self, dt: f32) -> States {
+    fn execute(&mut self, data: &mut T) -> States {
         for node in &mut self.nodes {
-            let state = node.node.execute(dt);
+            let state = node.node.execute(data);
             if state != States::Running {
                 if state == States::Succes {
                     node.watch_state = WatchState::Succeeded;
@@ -34,17 +34,17 @@ impl Executable for AsyncFirst {
         States::Running
     }
 
-    fn end(&mut self) {
+    fn end(&mut self, data: &mut T) {
         for node in &mut self.nodes {
             if node.watch_state == WatchState::Running {
-                node.node.end();
+                node.node.end(data);
                 node.watch_state = WatchState::Cancelled;
             }
         }
     }
 }
 
-impl ExecutableWatch for AsyncFirst {
+impl<T> ExecutableWatch for AsyncFirst<T> {
     fn get_content(&self) -> WatchContent {
         let childs = self
             .nodes
@@ -63,8 +63,8 @@ impl ExecutableWatch for AsyncFirst {
     }
 }
 
-impl AsyncFirst {
-    pub fn new(nodes: Vec<Box<dyn ExecutableAndWatch>>) -> Box<Self> {
+impl<T> AsyncFirst<T> {
+    pub fn new(nodes: Vec<Box<dyn ExecutableAndWatch<T>>>) -> Box<Self> {
         Box::new(AsyncFirst {
             nodes: nodes
                 .into_iter()

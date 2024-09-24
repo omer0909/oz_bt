@@ -1,13 +1,13 @@
 use crate::exec::{Executable, ExecutableWatch, States, WatchContent, WatchState};
 
-pub struct EventNode {
-    event: Box<dyn Fn() -> bool>,
+pub struct EventNode<T> {
+    event: Box<dyn Fn(&mut T) -> bool>,
     name: String,
 }
 
-impl Executable for EventNode {
-    fn execute(&mut self, _: f32) -> States {
-        if (*self.event)() {
+impl<T> Executable<T> for EventNode<T> {
+    fn execute(&mut self, data: &mut T) -> States {
+        if (*self.event)(data) {
             States::Succes
         } else {
             States::Fail
@@ -15,7 +15,7 @@ impl Executable for EventNode {
     }
 }
 
-impl ExecutableWatch for EventNode {
+impl<T> ExecutableWatch for EventNode<T> {
     fn get_content(&self) -> WatchContent {
         WatchContent {
             name: format!("event<{}>", self.name),
@@ -25,8 +25,8 @@ impl ExecutableWatch for EventNode {
     }
 }
 
-impl EventNode {
-    pub fn new(name: String, event: impl Fn() -> bool + 'static) -> Box<Self> {
+impl<T> EventNode<T> {
+    pub fn new(name: String, event: impl Fn(&mut T) -> bool + 'static) -> Box<Self> {
         Box::new(EventNode {
             event: Box::new(event),
             name: name,
