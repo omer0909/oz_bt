@@ -24,6 +24,8 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
             #content
 
+            pub use lib::NodeManager;
+
             trait CustomNode {
                 fn start(&mut self, _: &mut CustomData) {}
                 fn execute(&mut self, _: &mut CustomData) -> crate::exec::States;

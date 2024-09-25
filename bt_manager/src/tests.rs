@@ -57,11 +57,11 @@ mod tests {
         let input = Rc::new(RefCell::new(2.0));
         let mut tree_manager: TreeManager<MyData> = TreeManager::new(
             Sequence::new(vec![
-                sleep::lib::NodeManager::new(
+                sleep::NodeManager::new(
                     |_| sleep::Input { time: 1.0 },
                     Rc::new(RefCell::new(sleep::Output {})),
                 ),
-                sleep::lib::NodeManager::new(
+                sleep::NodeManager::new(
                     move |_| sleep::Input {
                         time: *input.borrow(),
                     },
