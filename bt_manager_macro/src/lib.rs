@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
-use syn::{parse_macro_input, ItemMod};
+use quote::{format_ident, quote};
+use syn::{parse_macro_input, Expr, ItemMod, Lit};
 
 #[proc_macro_attribute]
 pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -106,6 +106,57 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         }
+    };
+
+    TokenStream::from(expanded)
+}
+
+fn add_wrap(input: TokenStream) -> TokenStream {
+    let input_str = input.to_string();
+    let wrapped_str = format!("({})", input_str);
+    wrapped_str.parse().unwrap()
+}
+
+#[proc_macro]
+pub fn handle(input: TokenStream) -> TokenStream {
+    let wrapped_input = add_wrap(input);
+    let input = parse_macro_input!(wrapped_input as syn::ExprTuple);
+
+    let var_name = match &input.elems[0] {
+        Expr::Path(path) => path.path.segments.last().unwrap().ident.clone(),
+        _ => panic!("Input must be a valid identifier"),
+    };
+    let data = &input.elems[1];
+
+    let number = match &input.elems[2] {
+        Expr::Lit(lit) => {
+            if let Lit::Int(lit_int) = &lit.lit {
+                let value: usize = lit_int.base10_parse().unwrap();
+                value
+            } else {
+                panic!("3. param must be an integer");
+            }
+        }
+        _ => panic!("3. param must be an integer"),
+    };
+
+    let extra = if number > 1 {
+        (1..number)
+            .map(|ref i| {
+                let extra_name = format_ident!("{}{}", var_name, i.to_string());
+
+                quote! {
+                    let #extra_name = std::rc::Rc::clone(&#var_name);
+                }
+            })
+            .collect()
+    } else {
+        quote! {}
+    };
+
+    let expanded = quote! {
+        let #var_name = std::rc::Rc::new(std::cell::RefCell::new(#data));
+        #extra
     };
 
     TokenStream::from(expanded)

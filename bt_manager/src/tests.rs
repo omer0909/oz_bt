@@ -43,6 +43,7 @@ mod sleep {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bt_manager_macro::handle;
     use exec::States;
     use serde_json;
     use serial_test::serial;
@@ -53,8 +54,8 @@ mod tests {
     #[serial]
     fn tree() {
         let mut data = MyData { dt: 1.0 };
-
-        let input = Rc::new(RefCell::new(2.0));
+        handle!(input, 2.0, 5);
+        println!("{}", input3.borrow());
         let mut tree_manager: TreeManager<MyData> = TreeManager::new(
             Sequence::new(vec![
                 sleep::NodeManager::new(
@@ -63,7 +64,7 @@ mod tests {
                 ),
                 sleep::NodeManager::new(
                     move |_| sleep::Input {
-                        time: *input.borrow(),
+                        time: *input2.borrow(),
                     },
                     Rc::new(RefCell::new(sleep::Output {})),
                 ),
