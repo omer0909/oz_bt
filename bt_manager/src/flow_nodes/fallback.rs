@@ -75,7 +75,7 @@ impl<T> ExecutableWatch for Fallback<T> {
             .collect();
 
         WatchContent {
-            name: "async_wait".to_string(),
+            name: "fallback".to_string(),
             watch_state: WatchState::None,
             childs: childs,
         }

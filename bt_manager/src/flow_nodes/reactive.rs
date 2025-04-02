@@ -61,7 +61,7 @@ impl<T> ExecutableWatch for Reactive<T> {
         });
 
         WatchContent {
-            name: "async_wait".to_string(),
+            name: "reactive".to_string(),
             watch_state: WatchState::None,
             childs: childs,
         }

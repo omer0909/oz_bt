@@ -8,3 +8,4 @@ bt_manager_macro = { path = "../bt_manager_macro" }
 serial_test = "3"
 serde_json = "1.0"
 serde = { version = "1", features = ["derive"] }
+zmq = "0.10"

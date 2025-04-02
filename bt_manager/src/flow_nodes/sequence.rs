@@ -77,7 +77,7 @@ impl<T> ExecutableWatch for Sequence<T> {
             .collect();
 
         WatchContent {
-            name: "async_wait".to_string(),
+            name: "sequence".to_string(),
             watch_state: WatchState::None,
             childs: childs,
         }

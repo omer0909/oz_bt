@@ -59,6 +59,9 @@ impl<T> TreeManager<T> {
     }
 
     pub fn get_content(&self) -> exec::WatchContent {
-        self.node.get_content()
+        exec::WatchContent {
+            watch_state: self.watch_state,
+            ..self.node.get_content()
+        }
     }
 }

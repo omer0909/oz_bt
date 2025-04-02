@@ -56,7 +56,7 @@ impl<T> ExecutableWatch for AsyncFirst<T> {
             .collect();
 
         WatchContent {
-            name: "async_wait".to_string(),
+            name: "async_first".to_string(),
             watch_state: WatchState::None,
             childs: childs,
         }
