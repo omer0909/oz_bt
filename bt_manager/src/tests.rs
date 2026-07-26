@@ -12,6 +12,7 @@ mod sleep {
         pub time: f32,
     }
 
+    #[derive(Default)]
     pub struct Output {}
 
     #[derive(Default)]
@@ -29,7 +30,7 @@ mod sleep {
             println!("{}", data.data.dt);
 
             if self.elapsed > data.input.time {
-                return crate::exec::States::Succes;
+                return crate::exec::States::Success;
             }
             crate::exec::States::Running
         }
@@ -63,40 +64,29 @@ mod tests {
         handle!(input, 2.0, 5);
         // println!("{}", input3.borrow());
         let mut tree_manager: TreeManager<MyData> = TreeManager::new(
-            Sequence::new(vec![Sequence::new(vec![
-                sleep::NodeManager::new(
-                    |_| sleep::Input { time: 1.0 },
-                    Rc::new(RefCell::new(sleep::Output {})),
-                ),
-                Invert::new(Fail::new(sleep::NodeManager::new(
-                    move |_| sleep::Input {
-                        time: *input2.borrow(),
-                    },
-                    Rc::new(RefCell::new(sleep::Output {})),
-                ))),
-                sleep::NodeManager::new(
-                    move |_| sleep::Input { time: 2.0 },
-                    Rc::new(RefCell::new(sleep::Output {})),
-                ),
-                Fallback::new(vec![
-                    EventNode::new("printer".to_string(), |_: &mut MyData| {
+            sequence![sequence![
+                sleep!(|_| sleep::Input { time: 1.0 }),
+                invert!(fail!(sleep!(move |_| sleep::Input {
+                    time: *input2.borrow(),
+                }))),
+                sleep!(move |_| sleep::Input { time: 2.0 }),
+                fallback![
+                    event_node!("printer", |_: &mut MyData| {
                         println!("yazmadı");
                         false
                     }),
-                    EventNode::new("printer".to_string(), |data: &mut MyData| {
+                    event_node!("printer", |data: &mut MyData| {
                         println!("yazdırıldı! {}", data.dt);
                         true
                     }),
-                ]),
-                EventNode::new("printer".to_string(), |data: &mut MyData| {
+                ],
+                event_node!("printer", |data: &mut MyData| {
                     println!("yazdırıldı! {}", data.dt);
                     true
                 }),
-                sleep::NodeManager::new(
-                    move |_| sleep::Input { time: 2.0 },
-                    Rc::new(RefCell::new(sleep::Output {})),
-                ),
-            ])]),
+                sleep!(move |_| sleep::Input { time: 2.0 })
+                    .with_output(Rc::new(RefCell::new(sleep::Output {}))),
+            ]],
             10.0,
         );
 

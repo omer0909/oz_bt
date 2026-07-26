@@ -20,7 +20,7 @@ impl<T> Executable<T> for Sequence<T> {
     fn execute(&mut self, data: &mut T) -> States {
         loop {
             if self.counter >= self.nodes.len() {
-                return States::Succes;
+                return States::Success;
             }
 
             let node = &mut self.nodes[self.counter];
@@ -36,14 +36,14 @@ impl<T> Executable<T> for Sequence<T> {
                 return States::Running;
             } else {
                 node.node.end(data);
-                if state == States::Succes {
+                if state == States::Success {
                     node.watch_state = WatchState::Succeeded;
                 } else {
                     node.watch_state = WatchState::Failed;
                 }
             }
 
-            if state == States::Succes {
+            if state == States::Success {
                 self.counter += 1;
             }
 
@@ -97,4 +97,11 @@ impl<T> Sequence<T> {
             counter: 0,
         })
     }
+}
+
+#[macro_export]
+macro_rules! sequence {
+    ( $( $x:expr ),* $(,)? ) => {
+        Sequence::new(vec![ $( $x ),* ])
+    };
 }

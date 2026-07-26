@@ -23,7 +23,7 @@ impl<T> Executable<T> for AsyncFirst<T> {
         for node in &mut self.nodes {
             let state = node.node.execute(data);
             if state != States::Running {
-                if state == States::Succes {
+                if state == States::Success {
                     node.watch_state = WatchState::Succeeded;
                 } else {
                     node.watch_state = WatchState::Failed;
@@ -75,4 +75,11 @@ impl<T> AsyncFirst<T> {
                 .collect(),
         })
     }
+}
+
+#[macro_export]
+macro_rules! async_first {
+    ( $( $x:expr ),* $(,)? ) => {
+        AsyncFirst::new(vec![ $( $x ),* ])
+    };
 }

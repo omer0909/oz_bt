@@ -38,17 +38,27 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 output: &'a mut Output,
             }
 
+            pub fn new(
+                input: impl Fn(&mut Data) -> Input + 'static,
+            ) -> Box<NodeManager> {
+                NodeManager::new(input)
+            }
+
             pub mod lib {
                 impl NodeManager {
                     pub fn new(
                         input: impl Fn(&mut super::Data) -> super::Input + 'static,
-                        output: std::rc::Rc<std::cell::RefCell<super::Output>>,
                     ) -> Box<Self> {
                         Box::new(NodeManager {
-                            output_handle: output,
+                            output_handle: std::rc::Rc::new(std::cell::RefCell::new(super::Output::default())),
                             input_handle: Box::new(input),
                             node: None,
                         })
+                    }
+
+                    pub fn with_output(mut self: Box<Self>, output: std::rc::Rc<std::cell::RefCell<super::Output>>) -> Box<Self>{
+                        self.output_handle = output;
+                        self
                     }
                 }
 
@@ -106,6 +116,14 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
         }
+
+        #[macro_export]
+        macro_rules! #mod_name {
+            ( $x:expr $(,)? ) => {
+                #mod_name::new($x)
+            };
+        }
+
     };
 
     TokenStream::from(expanded)

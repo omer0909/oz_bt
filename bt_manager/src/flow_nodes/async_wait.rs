@@ -40,7 +40,7 @@ impl<T> Executable<T> for AsyncWait<T> {
             .iter()
             .all(|x| x.watch_state != WatchState::Running)
         {
-            return States::Succes;
+            return States::Success;
         }
 
         States::Running
@@ -87,4 +87,11 @@ impl<T> AsyncWait<T> {
                 .collect(),
         })
     }
+}
+
+#[macro_export]
+macro_rules! async_wait {
+    ( $( $x:expr ),* $(,)? ) => {
+        AsyncWait::new(vec![ $( $x ),* ])
+    };
 }

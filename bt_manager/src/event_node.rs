@@ -7,11 +7,7 @@ pub struct EventNode<T> {
 
 impl<T> Executable<T> for EventNode<T> {
     fn execute(&mut self, data: &mut T) -> States {
-        if (*self.event)(data) {
-            States::Succes
-        } else {
-            States::Fail
-        }
+        States::from_bool((*self.event)(data))
     }
 }
 
@@ -26,10 +22,17 @@ impl<T> ExecutableWatch for EventNode<T> {
 }
 
 impl<T> EventNode<T> {
-    pub fn new(name: String, event: impl Fn(&mut T) -> bool + 'static) -> Box<Self> {
+    pub fn new(name: &str, event: impl Fn(&mut T) -> bool + 'static) -> Box<Self> {
         Box::new(EventNode {
             event: Box::new(event),
-            name: name,
+            name: String::from(name),
         })
     }
+}
+
+#[macro_export]
+macro_rules! event_node {
+    ($name:expr, $event:expr $(,)?) => {
+        EventNode::new($name, $event)
+    };
 }

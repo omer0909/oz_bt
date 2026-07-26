@@ -16,16 +16,16 @@ impl<T> Executable<T> for Invert<T> {
     fn execute(&mut self, data: &mut T) -> States {
         let state = self.node.execute(data);
         if state != States::Running {
-            if state == States::Succes {
+            if state == States::Success {
                 self.watch_state = WatchState::Succeeded;
             } else {
                 self.watch_state = WatchState::Failed;
             }
 
-            return if state == States::Succes {
+            return if state == States::Success {
                 States::Fail
             } else {
-                States::Succes
+                States::Success
             };
         }
 
@@ -60,4 +60,11 @@ impl<T> Invert<T> {
             watch_state: WatchState::None,
         })
     }
+}
+
+#[macro_export]
+macro_rules! invert {
+    ( $x:expr $(,)? ) => {
+        Invert::new($x)
+    };
 }

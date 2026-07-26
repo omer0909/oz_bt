@@ -20,8 +20,18 @@ pub mod exec {
     #[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone, Copy)]
     pub enum States {
         Running,
-        Succes,
+        Success,
         Fail,
+    }
+
+    impl States {
+        pub fn from_bool(success: bool) -> Self {
+            if success {
+                States::Success
+            } else {
+                States::Fail
+            }
+        }
     }
 
     pub trait Executable<T> {

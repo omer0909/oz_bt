@@ -16,7 +16,7 @@ impl<T> Executable<T> for Fail<T> {
     fn execute(&mut self, data: &mut T) -> States {
         let state = self.node.execute(data);
         if state != States::Running {
-            if state == States::Succes {
+            if state == States::Success {
                 self.watch_state = WatchState::Succeeded;
             } else {
                 self.watch_state = WatchState::Failed;
@@ -55,4 +55,11 @@ impl<T> Fail<T> {
             watch_state: WatchState::None,
         })
     }
+}
+
+#[macro_export]
+macro_rules! fail {
+    ( $x:expr $(,)? ) => {
+        Fail::new($x)
+    };
 }

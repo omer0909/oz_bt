@@ -42,7 +42,7 @@ impl<T> TreeManager<T> {
 
         if status != States::Running {
             self.node.end(data);
-            if status == States::Succes {
+            if status == States::Success {
                 self.watch_state = WatchState::Succeeded;
             } else {
                 self.watch_state = WatchState::Failed;

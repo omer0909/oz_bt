@@ -36,7 +36,7 @@ impl<T> Executable<T> for Fallback<T> {
                 return States::Running;
             } else {
                 node.node.end(data);
-                if state == States::Succes {
+                if state == States::Success {
                     node.watch_state = WatchState::Succeeded;
                 } else {
                     node.watch_state = WatchState::Failed;
@@ -47,8 +47,8 @@ impl<T> Executable<T> for Fallback<T> {
                 self.counter += 1;
             }
 
-            if state == States::Succes {
-                return States::Succes;
+            if state == States::Success {
+                return States::Success;
             }
         }
     }
@@ -95,4 +95,11 @@ impl<T> Fallback<T> {
             counter: 0,
         })
     }
+}
+
+#[macro_export]
+macro_rules! fallback {
+    ( $( $x:expr ),* $(,)? ) => {
+        Fallback::new(vec![ $( $x ),* ])
+    };
 }

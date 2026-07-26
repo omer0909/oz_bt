@@ -18,7 +18,7 @@ impl<T> Executable<T> for Reactive<T> {
             node.node.start(data);
             let state = node.node.execute(data);
             node.node.end(data);
-            if state != States::Succes {
+            if state != States::Success {
                 if state == States::Fail {
                     node.watch_state = WatchState::Failed;
                 } else {
@@ -87,4 +87,11 @@ impl<T> Reactive<T> {
             },
         })
     }
+}
+
+#[macro_export]
+macro_rules! reactive {
+    ( $( $x:expr ),* $(,)? ) => {
+        Reactive::new(vec![ $( $x ),* ])
+    };
 }
