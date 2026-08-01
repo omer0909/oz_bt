@@ -1,5 +1,5 @@
 use crate::exec::{
-    Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
+    Executable, ExecutableAndWatch, ExecutableWatch, NodeTypes, States, WatchContent, WatchState,
 };
 
 struct NodeData<T> {
@@ -9,6 +9,7 @@ struct NodeData<T> {
 
 pub struct AsyncFirst<T> {
     nodes: Vec<NodeData<T>>,
+    comment: Option<String>,
 }
 
 impl<T> Executable<T> for AsyncFirst<T> {
@@ -56,9 +57,11 @@ impl<T> ExecutableWatch for AsyncFirst<T> {
             .collect();
 
         WatchContent {
+            node_type: NodeTypes::Flow,
             name: "async_first".to_string(),
             watch_state: WatchState::None,
             childs: childs,
+            comment: self.comment.clone(),
         }
     }
 }
@@ -73,7 +76,13 @@ impl<T> AsyncFirst<T> {
                     watch_state: WatchState::None,
                 })
                 .collect(),
+            comment: None,
         })
+    }
+
+    pub fn comment(mut self: Box<Self>, comment: &str) -> Box<Self> {
+        self.comment = Some(comment.to_string());
+        self
     }
 }
 

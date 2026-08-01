@@ -1,10 +1,11 @@
 use crate::exec::{
-    Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
+    Executable, ExecutableAndWatch, ExecutableWatch, NodeTypes, States, WatchContent, WatchState,
 };
 
 pub struct Success<T> {
     node: Box<dyn ExecutableAndWatch<T>>,
     watch_state: WatchState,
+    comment: Option<String>,
 }
 
 impl<T> Executable<T> for Success<T> {
@@ -39,12 +40,14 @@ impl<T> Executable<T> for Success<T> {
 impl<T> ExecutableWatch for Success<T> {
     fn get_content(&self) -> WatchContent {
         WatchContent {
+            node_type: NodeTypes::Decorator,
             name: "success".to_string(),
             watch_state: WatchState::None,
             childs: vec![WatchContent {
                 watch_state: self.watch_state,
                 ..self.node.get_content()
             }],
+            comment: self.comment.clone(),
         }
     }
 }
@@ -54,7 +57,13 @@ impl<T> Success<T> {
         Box::new(Success {
             node: node,
             watch_state: WatchState::None,
+            comment: None,
         })
+    }
+
+    pub fn comment(mut self: Box<Self>, comment: &str) -> Box<Self> {
+        self.comment = Some(comment.to_string());
+        self
     }
 }
 

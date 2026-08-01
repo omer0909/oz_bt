@@ -2,13 +2,14 @@ use crate::exec::{
     Executable, ExecutableAndWatch, ExecutableWatch, NodeTypes, States, WatchContent, WatchState,
 };
 
-pub struct Fail<T> {
+pub struct GroupIn<T> {
     node: Box<dyn ExecutableAndWatch<T>>,
     watch_state: WatchState,
+    group_name: String,
     comment: Option<String>,
 }
 
-impl<T> Executable<T> for Fail<T> {
+impl<T> Executable<T> for GroupIn<T> {
     fn start(&mut self, data: &mut T) {
         self.node.start(data);
         self.watch_state = WatchState::Running;
@@ -22,7 +23,8 @@ impl<T> Executable<T> for Fail<T> {
             } else {
                 self.watch_state = WatchState::Failed;
             }
-            return States::Fail;
+
+            return state;
         }
 
         States::Running
@@ -36,11 +38,11 @@ impl<T> Executable<T> for Fail<T> {
     }
 }
 
-impl<T> ExecutableWatch for Fail<T> {
+impl<T> ExecutableWatch for GroupIn<T> {
     fn get_content(&self) -> WatchContent {
         WatchContent {
-            node_type: NodeTypes::Decorator,
-            name: "fail".to_string(),
+            node_type: NodeTypes::GroupIn(self.group_name.clone()),
+            name: "group_in".to_string(),
             watch_state: WatchState::None,
             childs: vec![WatchContent {
                 watch_state: self.watch_state,
@@ -51,9 +53,10 @@ impl<T> ExecutableWatch for Fail<T> {
     }
 }
 
-impl<T> Fail<T> {
-    pub fn new(node: Box<dyn ExecutableAndWatch<T>>) -> Box<Self> {
-        Box::new(Fail {
+impl<T> GroupIn<T> {
+    pub fn new(group_name: &str, node: Box<dyn ExecutableAndWatch<T>>) -> Box<Self> {
+        Box::new(GroupIn {
+            group_name: group_name.to_string(),
             node: node,
             watch_state: WatchState::None,
             comment: None,
@@ -67,8 +70,8 @@ impl<T> Fail<T> {
 }
 
 #[macro_export]
-macro_rules! fail {
-    ( $x:expr $(,)? ) => {
-        Fail::new($x)
+macro_rules! group_in {
+    ($name:expr, $node:expr $(,)?) => {
+        GroupIn::new($name, $node)
     };
 }

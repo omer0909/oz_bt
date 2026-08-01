@@ -1,5 +1,5 @@
 use crate::exec::{
-    Executable, ExecutableAndWatch, ExecutableWatch, States, WatchContent, WatchState,
+    Executable, ExecutableAndWatch, ExecutableWatch, NodeTypes, States, WatchContent, WatchState,
 };
 
 struct NodeData<T> {
@@ -10,6 +10,7 @@ struct NodeData<T> {
 pub struct Sequence<T> {
     nodes: Vec<NodeData<T>>,
     counter: usize,
+    comment: Option<String>,
 }
 
 impl<T> Executable<T> for Sequence<T> {
@@ -77,9 +78,11 @@ impl<T> ExecutableWatch for Sequence<T> {
             .collect();
 
         WatchContent {
+            node_type: NodeTypes::Flow,
             name: "sequence".to_string(),
             watch_state: WatchState::None,
             childs: childs,
+            comment: self.comment.clone(),
         }
     }
 }
@@ -95,7 +98,13 @@ impl<T> Sequence<T> {
                 })
                 .collect(),
             counter: 0,
+            comment: None,
         })
+    }
+
+    pub fn comment(mut self: Box<Self>, comment: &str) -> Box<Self> {
+        self.comment = Some(comment.to_string());
+        self
     }
 }
 

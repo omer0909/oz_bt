@@ -10,6 +10,8 @@ pub use flow_nodes::async_first::AsyncFirst;
 pub use flow_nodes::async_wait::AsyncWait;
 pub use flow_nodes::fail::Fail;
 pub use flow_nodes::fallback::Fallback;
+pub use flow_nodes::group_in::GroupIn;
+pub use flow_nodes::group_out::GroupOut;
 pub use flow_nodes::invert::Invert;
 pub use flow_nodes::reactive::Reactive;
 pub use flow_nodes::sequence::Sequence;

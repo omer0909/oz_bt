@@ -53,7 +53,13 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                             output_handle: std::rc::Rc::new(std::cell::RefCell::new(super::Output::default())),
                             input_handle: Box::new(input),
                             node: None,
+                            comment: None,
                         })
+                    }
+
+                    pub fn comment(mut self: Box<Self>, comment: &str) -> Box<Self> {
+                        self.comment = Some(comment.to_string());
+                        self
                     }
 
                     pub fn with_output(mut self: Box<Self>, output: std::rc::Rc<std::cell::RefCell<super::Output>>) -> Box<Self>{
@@ -66,6 +72,7 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     pub input_handle: Box<dyn Fn(&mut super::Data) -> super::Input>,
                     pub output_handle: std::rc::Rc<std::cell::RefCell<super::Output>>,
                     pub node: Option<Box<dyn super::CustomNode>>,
+                    pub comment: Option<String>,
                 }
 
                 impl crate::executable::exec::Executable<super::Data> for NodeManager {
@@ -108,9 +115,11 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 impl crate::executable::exec::ExecutableWatch for NodeManager {
                     fn get_content(&self) -> crate::executable::exec::WatchContent {
                         crate::executable::exec::WatchContent {
+                            node_type: crate::executable::exec::NodeTypes::Leaf,
                             name: #mod_name_string.to_string(),
                             watch_state: crate::executable::exec::WatchState::None,
                             childs: Vec::new(),
+                            comment: self.comment.clone(),
                         }
                     }
                 }

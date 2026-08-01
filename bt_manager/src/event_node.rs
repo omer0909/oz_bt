@@ -1,8 +1,9 @@
-use crate::exec::{Executable, ExecutableWatch, States, WatchContent, WatchState};
+use crate::exec::{Executable, ExecutableWatch, NodeTypes, States, WatchContent, WatchState};
 
 pub struct EventNode<T> {
     event: Box<dyn Fn(&mut T) -> bool>,
-    name: String,
+    event_name: String,
+    comment: Option<String>,
 }
 
 impl<T> Executable<T> for EventNode<T> {
@@ -14,19 +15,27 @@ impl<T> Executable<T> for EventNode<T> {
 impl<T> ExecutableWatch for EventNode<T> {
     fn get_content(&self) -> WatchContent {
         WatchContent {
-            name: format!("event<{}>", self.name),
+            node_type: NodeTypes::Event(self.event_name.clone()),
+            name: "event".to_string(),
             watch_state: WatchState::None,
             childs: Vec::new(),
+            comment: self.comment.clone(),
         }
     }
 }
 
 impl<T> EventNode<T> {
-    pub fn new(name: &str, event: impl Fn(&mut T) -> bool + 'static) -> Box<Self> {
+    pub fn new(event_name: &str, event: impl Fn(&mut T) -> bool + 'static) -> Box<Self> {
         Box::new(EventNode {
             event: Box::new(event),
-            name: String::from(name),
+            event_name: event_name.to_string(),
+            comment: None,
         })
+    }
+
+    pub fn comment(mut self: Box<Self>, comment: &str) -> Box<Self> {
+        self.comment = Some(comment.to_string());
+        self
     }
 }
 
