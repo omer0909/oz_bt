@@ -1,4 +1,4 @@
-use bt_manager::*;
+use oz_bt::*;
 
 struct MyData {
     dt: f32,
@@ -31,8 +31,8 @@ impl Node for Sleep {
 
 #[cfg(test)]
 mod tests {
-    extern crate self as bt_manager;
-    use bt_manager::exec::VisualizerMessage;
+    extern crate self as oz_bt;
+    use oz_bt::exec::VisualizerMessage;
 
     use super::*;
     use exec::States;
@@ -51,7 +51,7 @@ mod tests {
         println!("{}", with!([my_input], my_input.get()));
         let mut tree_manager: TreeManager<MyData> = TreeManager::new(
             sequence![sequence![
-                ::bt_manager::CustomNode::<Sleep>::new_i(|_| 5.0),
+                ::oz_bt::CustomNode::<Sleep>::new_i(|_| 5.0),
                 async_first![sleep_i!(|_| 2.0), sleep_i!(|_| 1.0)],
                 with!([my_input], sleep_io!(move |_| 2.0, my_input)),
                 invert!(fail!(with!([my_input], sleep_i!(move |_| my_input.get())))

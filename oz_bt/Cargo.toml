@@ -1,10 +1,10 @@
 [package]
-name = "bt_manager"
+name = "oz_bt"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bt_manager_macro = { path = "../bt_manager_macro" }
+oz_bt_macro = { path = "../oz_bt_macro" }
 serial_test = "4"
 serde = { version = "1", features = ["derive"] }
 zmq = "0.10"

@@ -109,11 +109,11 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! { #struct_name }
     };
 
-    let bt_manager_crate: proc_macro2::TokenStream = if let Some(alias) = &args.crate_alias {
+    let oz_bt_crate: proc_macro2::TokenStream = if let Some(alias) = &args.crate_alias {
         let ident = syn::Ident::new(alias, proc_macro2::Span::call_site());
         quote! { ::#ident }
     } else {
-        quote! { ::bt_manager }
+        quote! { ::oz_bt }
     };
 
     let struct_ident = &struct_name.segments.last().unwrap().ident;
@@ -133,7 +133,7 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
             #[macro_export]
             macro_rules! #macro_name_io {
                 ($input:expr, $output:expr $(,)?) => {
-                    #bt_manager_crate::CustomNode::<#struct_path>::new_io($input, $output)
+                    #oz_bt_crate::CustomNode::<#struct_path>::new_io($input, $output)
                 };
             }
         });
@@ -144,7 +144,7 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
             #[macro_export]
             macro_rules! #macro_name_i {
                 ( $input:expr $(,)? ) => {
-                    #bt_manager_crate::CustomNode::<#struct_path>::new_i($input)
+                    #oz_bt_crate::CustomNode::<#struct_path>::new_i($input)
                 };
             }
         });
@@ -155,7 +155,7 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
             #[macro_export]
             macro_rules! #macro_name_o {
                 ( $output:expr $(,)? ) => {
-                    #bt_manager_crate::CustomNode::<#struct_path>::new_o($output)
+                    #oz_bt_crate::CustomNode::<#struct_path>::new_o($output)
                 };
             }
         });
@@ -167,7 +167,7 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
         #[macro_export]
         macro_rules! #macro_name {
             () => {
-                #bt_manager_crate::CustomNode::<#struct_path>::new()
+                #oz_bt_crate::CustomNode::<#struct_path>::new()
             };
         }
 
@@ -250,7 +250,7 @@ pub fn node_(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     pub comment: Option<String>,
                 }
 
-                impl ::bt_manager::executable::exec::Executable<super::Data> for NodeManager {
+                impl ::oz_bt::executable::exec::Executable<super::Data> for NodeManager {
                     fn start(&mut self, data: &mut super::Data) {
                         self.node = Some(Box::new(super::Node::default()));
                         let input_data = self.input_handle.as_ref()(data);
@@ -263,7 +263,7 @@ pub fn node_(_attr: TokenStream, item: TokenStream) -> TokenStream {
                         self.node.as_mut().unwrap().start(&mut custom_data);
                     }
 
-                    fn execute(&mut self, data: &mut super::Data) -> ::bt_manager::executable::exec::States {
+                    fn execute(&mut self, data: &mut super::Data) -> ::oz_bt::executable::exec::States {
                         let input_data = self.input_handle.as_ref()(data);
                         let mut output_data = self.output_handle.borrow_mut();
                         let mut custom_data = super::CustomData {
@@ -287,12 +287,12 @@ pub fn node_(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
 
-                impl ::bt_manager::executable::exec::ExecutableWatch for NodeManager {
-                    fn get_content(&self) -> ::bt_manager::executable::exec::WatchContent {
-                        ::bt_manager::executable::exec::WatchContent {
-                            node_type: ::bt_manager::executable::exec::NodeTypes::Leaf,
+                impl ::oz_bt::executable::exec::ExecutableWatch for NodeManager {
+                    fn get_content(&self) -> ::oz_bt::executable::exec::WatchContent {
+                        ::oz_bt::executable::exec::WatchContent {
+                            node_type: ::oz_bt::executable::exec::NodeTypes::Leaf,
                             name: #mod_name_string.to_string(),
-                            watch_state: ::bt_manager::executable::exec::WatchState::None,
+                            watch_state: ::oz_bt::executable::exec::WatchState::None,
                             childs: Vec::new(),
                             comment: self.comment.clone(),
                         }

@@ -52,29 +52,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b588b76d00fde79687d7646a9b5bdf3cc0f655e0bbd080335a95d7e96f3587da"
 
 [[package]]
-name = "bt_manager"
-version = "0.1.0"
-dependencies = [
- "bincode-next",
- "bt_manager_macro",
- "chrono",
- "heck",
- "serde",
- "serial_test",
- "zmq",
-]
-
-[[package]]
-name = "bt_manager_macro"
-version = "0.1.0"
-dependencies = [
- "heck",
- "proc-macro2",
- "quote",
- "syn 3.0.3",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -377,6 +354,29 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+
+[[package]]
+name = "oz_bt"
+version = "0.1.0"
+dependencies = [
+ "bincode-next",
+ "chrono",
+ "heck",
+ "oz_bt_macro",
+ "serde",
+ "serial_test",
+ "zmq",
+]
+
+[[package]]
+name = "oz_bt_macro"
+version = "0.1.0"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.3",
+]
 
 [[package]]
 name = "parking_lot"
