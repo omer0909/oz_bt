@@ -57,7 +57,7 @@ impl<T> GroupOut<T> {
     pub fn new(branch_name: &str, node: Box<dyn ExecutableAndWatch<T>>) -> Box<Self> {
         Box::new(GroupOut {
             branch_name: branch_name.to_string(),
-            node: node,
+            node,
             watch_state: WatchState::None,
             comment: None,
         })

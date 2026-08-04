@@ -79,7 +79,7 @@ impl<T> ExecutableWatch for Fallback<T> {
             node_type: NodeTypes::Flow,
             name: "fallback".to_string(),
             watch_state: WatchState::None,
-            childs: childs,
+            childs,
             comment: self.comment.clone(),
         }
     }
@@ -91,7 +91,7 @@ impl<T> Fallback<T> {
             nodes: nodes
                 .into_iter()
                 .map(|node| NodeData {
-                    node: node,
+                    node,
                     watch_state: WatchState::None,
                 })
                 .collect(),

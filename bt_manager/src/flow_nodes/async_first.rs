@@ -60,7 +60,7 @@ impl<T> ExecutableWatch for AsyncFirst<T> {
             node_type: NodeTypes::Flow,
             name: "async_first".to_string(),
             watch_state: WatchState::None,
-            childs: childs,
+            childs,
             comment: self.comment.clone(),
         }
     }
@@ -72,7 +72,7 @@ impl<T> AsyncFirst<T> {
             nodes: nodes
                 .into_iter()
                 .map(|node| NodeData {
-                    node: node,
+                    node,
                     watch_state: WatchState::None,
                 })
                 .collect(),

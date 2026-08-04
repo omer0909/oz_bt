@@ -59,7 +59,7 @@ impl<T> ExecutableWatch for Invert<T> {
 impl<T> Invert<T> {
     pub fn new(node: Box<dyn ExecutableAndWatch<T>>) -> Box<Self> {
         Box::new(Invert {
-            node: node,
+            node,
             watch_state: WatchState::None,
             comment: None,
         })

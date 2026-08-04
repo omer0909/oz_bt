@@ -11,7 +11,7 @@ pub struct TreeManager<T> {
 impl<T> TreeManager<T> {
     pub fn new(node: Box<dyn exec::ExecutableAndWatch<T>>, loop_rate: f32) -> Self {
         TreeManager {
-            node: node,
+            node,
             last: Instant::now(),
             loop_wait: 1.0 / loop_rate,
             watch_state: WatchState::None,

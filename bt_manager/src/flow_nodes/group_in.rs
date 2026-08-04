@@ -57,7 +57,7 @@ impl<T> GroupIn<T> {
     pub fn new(group_name: &str, node: Box<dyn ExecutableAndWatch<T>>) -> Box<Self> {
         Box::new(GroupIn {
             group_name: group_name.to_string(),
-            node: node,
+            node,
             watch_state: WatchState::None,
             comment: None,
         })

@@ -81,7 +81,7 @@ impl<T> ExecutableWatch for Sequence<T> {
             node_type: NodeTypes::Flow,
             name: "sequence".to_string(),
             watch_state: WatchState::None,
-            childs: childs,
+            childs,
             comment: self.comment.clone(),
         }
     }
@@ -93,7 +93,7 @@ impl<T> Sequence<T> {
             nodes: nodes
                 .into_iter()
                 .map(|node| NodeData {
-                    node: node,
+                    node,
                     watch_state: WatchState::None,
                 })
                 .collect(),

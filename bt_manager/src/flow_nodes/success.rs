@@ -55,7 +55,7 @@ impl<T> ExecutableWatch for Success<T> {
 impl<T> Success<T> {
     pub fn new(node: Box<dyn ExecutableAndWatch<T>>) -> Box<Self> {
         Box::new(Success {
-            node: node,
+            node,
             watch_state: WatchState::None,
             comment: None,
         })

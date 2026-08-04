@@ -88,7 +88,7 @@ impl<N: Node> Executable<N::Data> for CustomNode<N> {
         let mut custom_data = Ctx {
             input: &input_data,
             output: &mut *output_data,
-            data: data,
+            data,
         };
         self.node.as_mut().unwrap().start(&mut custom_data);
     }
@@ -99,7 +99,7 @@ impl<N: Node> Executable<N::Data> for CustomNode<N> {
         let mut custom_data = Ctx {
             input: &input_data,
             output: &mut *output_data,
-            data: data,
+            data,
         };
         self.node.as_mut().unwrap().execute(&mut custom_data)
     }
@@ -110,7 +110,7 @@ impl<N: Node> Executable<N::Data> for CustomNode<N> {
         let mut custom_data = Ctx {
             input: &input_data,
             output: &mut *output_data,
-            data: data,
+            data,
         };
         self.node.as_mut().unwrap().end(&mut custom_data);
         self.node = None;
