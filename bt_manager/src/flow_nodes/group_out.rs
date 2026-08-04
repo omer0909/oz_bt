@@ -72,6 +72,6 @@ impl<T> GroupOut<T> {
 #[macro_export]
 macro_rules! group_out {
     ($name:expr, $node:expr $(,)?) => {
-        GroupOut::new($name, $node)
+        $crate::GroupOut::new($name, $node)
     };
 }

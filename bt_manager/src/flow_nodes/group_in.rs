@@ -72,6 +72,6 @@ impl<T> GroupIn<T> {
 #[macro_export]
 macro_rules! group_in {
     ($name:expr, $node:expr $(,)?) => {
-        GroupIn::new($name, $node)
+        $crate::GroupIn::new($name, $node)
     };
 }

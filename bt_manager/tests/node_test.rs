@@ -1,56 +1,42 @@
-use crate::*;
+use bt_manager::*;
 
 struct MyData {
     dt: f32,
 }
 
-#[node]
-mod sleep {
-    type Data = super::MyData;
+#[derive(Default)]
+struct Sleep {
+    elapsed: f32,
+}
 
-    pub struct Input {
-        pub time: f32,
-    }
+#[node(node_type = "$crate::Sleep")]
+impl Node for Sleep {
+    type Data = MyData;
+    type Input = f32;
+    type Output = f32;
 
-    #[derive(Default)]
-    pub struct Output {}
+    fn execute(&mut self, ctx: &mut Ctx<Self>) -> crate::exec::States {
+        self.elapsed += ctx.data.dt;
 
-    #[derive(Default)]
-    pub struct Node {
-        elapsed: f32,
-    }
+        println!("elapsed: {}", self.elapsed);
 
-    impl CustomNode for Node {
-        fn start(&mut self, _: &mut CustomData) {
-            println!("started");
+        *ctx.output = self.elapsed;
+
+        if self.elapsed < *ctx.input {
+            return crate::exec::States::Running;
         }
-
-        fn execute(&mut self, data: &mut CustomData) -> crate::exec::States {
-            self.elapsed += data.data.dt;
-            println!("{}", data.data.dt);
-
-            if self.elapsed > data.input.time {
-                return crate::exec::States::Success;
-            }
-            crate::exec::States::Running
-        }
-
-        fn end(&mut self, _: &mut CustomData) {
-            println!("ended");
-        }
+        crate::exec::States::Success
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::exec::VisualizerMessage;
+    extern crate self as bt_manager;
+    use bt_manager::exec::VisualizerMessage;
 
     use super::*;
-    use bt_manager_macro::handle;
     use exec::States;
     use serial_test::serial;
-    use std::cell::RefCell;
-    use std::rc::Rc;
     use std::thread;
 
     #[test]
@@ -61,20 +47,16 @@ mod tests {
         publisher.bind("tcp://*:5555").expect("Yayıncı bağlanamadı");
 
         let mut data = MyData { dt: 1.0 };
-        handle!(input, 2.0, 5);
-        // println!("{}", input3.borrow());
+        let my_input = handle(2.0);
+        println!("{}", with!([my_input], my_input.get()));
         let mut tree_manager: TreeManager<MyData> = TreeManager::new(
             sequence![sequence![
-                sleep!(|_| sleep::Input { time: 1.0 }),
-                async_first![
-                    sleep!(|_| sleep::Input { time: 2.0 }),
-                    sleep!(|_| sleep::Input { time: 1.0 })
-                ],
-                invert!(fail!(sleep!(move |_| sleep::Input {
-                    time: *input2.borrow(),
-                }))
-                .comment("comment asdasdasdasd")),
-                sleep!(move |_| sleep::Input { time: 2.0 }),
+                ::bt_manager::CustomNode::<Sleep>::new_i(|_| 5.0),
+                async_first![sleep_i!(|_| 2.0), sleep_i!(|_| 1.0)],
+                with!([my_input], sleep_io!(move |_| 2.0, my_input)),
+                invert!(fail!(with!([my_input], sleep_i!(move |_| my_input.get())))
+                    .comment("comment asdasdasdasd")),
+                sleep_i!(move |_| 2.0),
                 group_in!(
                     "test group",
                     fallback![
@@ -140,16 +122,14 @@ mod tests {
                     true
                 }),
                 sequence![
-                    sleep!(move |_| sleep::Input { time: 2.0 }),
-                    sleep!(move |_| sleep::Input { time: 2.0 }),
-                    sleep!(move |_| sleep::Input { time: 2.0 }),
-                    sleep!(move |_| sleep::Input { time: 2.0 }),
-                    sleep!(move |_| sleep::Input { time: 2.0 }),
-                    sleep!(move |_| sleep::Input { time: 2.0 }),
-                    sleep!(move |_| sleep::Input { time: 2.0 }),
+                    sleep_i!(move |_| 2.0),
+                    sleep_i!(move |_| 2.0),
+                    sleep_i!(move |_| 2.0),
+                    sleep_i!(move |_| 2.0),
+                    sleep_i!(move |_| 2.0),
+                    sleep_i!(move |_| 2.0),
+                    sleep_i!(move |_| 2.0),
                 ],
-                sleep!(move |_| sleep::Input { time: 2.0 })
-                    .with_output(Rc::new(RefCell::new(sleep::Output {}))),
             ]],
             10.0,
         );

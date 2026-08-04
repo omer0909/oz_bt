@@ -111,6 +111,6 @@ impl<T> Sequence<T> {
 #[macro_export]
 macro_rules! sequence {
     ( $( $x:expr ),* $(,)? ) => {
-        Sequence::new(vec![ $( $x ),* ])
+        $crate::Sequence::new(vec![ $( $x ),* ])
     };
 }

@@ -74,6 +74,6 @@ impl<T> Invert<T> {
 #[macro_export]
 macro_rules! invert {
     ( $x:expr $(,)? ) => {
-        Invert::new($x)
+        $crate::Invert::new($x)
     };
 }

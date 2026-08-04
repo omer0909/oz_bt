@@ -20,4 +20,9 @@ pub use flow_nodes::success::Success;
 mod event_node;
 pub use event_node::EventNode;
 
-mod tests;
+mod custom_node;
+pub use custom_node::handle;
+pub use custom_node::Ctx;
+pub use custom_node::CustomNode;
+pub use custom_node::HandleExt;
+pub use custom_node::Node;

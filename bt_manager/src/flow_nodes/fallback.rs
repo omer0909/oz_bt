@@ -109,6 +109,6 @@ impl<T> Fallback<T> {
 #[macro_export]
 macro_rules! fallback {
     ( $( $x:expr ),* $(,)? ) => {
-        Fallback::new(vec![ $( $x ),* ])
+        $crate::Fallback::new(vec![ $( $x ),* ])
     };
 }

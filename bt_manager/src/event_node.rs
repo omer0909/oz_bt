@@ -42,6 +42,6 @@ impl<T> EventNode<T> {
 #[macro_export]
 macro_rules! event_node {
     ($name:expr, $event:expr $(,)?) => {
-        EventNode::new($name, $event)
+        $crate::EventNode::new($name, $event)
     };
 }

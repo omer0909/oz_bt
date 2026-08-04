@@ -1,10 +1,185 @@
+use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, Expr, ItemMod, Lit};
+use syn::{
+    parse::{Parse, ParseStream},
+    parse_macro_input,
+    punctuated::Punctuated,
+    Expr, ExprLit, ImplItem, ImplItemType, ItemImpl, ItemMod, Lit, Meta, Token,
+};
+
+fn has_assoc_type(input_impl: &syn::ItemImpl, name: &str) -> bool {
+    input_impl
+        .items
+        .iter()
+        .any(|item| matches!(item, ImplItem::Type(ImplItemType { ident, .. }) if ident == name))
+}
+
+struct NodeArgs {
+    crate_alias: Option<String>,
+    node_type: Option<String>,
+}
+
+impl Parse for NodeArgs {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let mut crate_alias = None;
+        let mut node_type = None;
+
+        let metas = Punctuated::<Meta, Token![,]>::parse_terminated(input)?;
+        for meta in metas {
+            let nv = match meta {
+                Meta::NameValue(nv) => nv,
+                other => {
+                    return Err(syn::Error::new_spanned(
+                        other,
+                        "beklenen format: crate = \"...\" veya node_type = \"...\"",
+                    ))
+                }
+            };
+            let value = match &nv.value {
+                Expr::Lit(ExprLit {
+                    lit: Lit::Str(s), ..
+                }) => s.value(),
+                _ => {
+                    return Err(syn::Error::new_spanned(
+                        &nv.value,
+                        "değer string literal olmalı",
+                    ))
+                }
+            };
+
+            if nv.path.is_ident("crate") {
+                crate_alias = Some(value);
+            } else if nv.path.is_ident("node_type") {
+                node_type = Some(value);
+            } else {
+                return Err(syn::Error::new_spanned(&nv.path, "bilinmeyen parametre"));
+            }
+        }
+
+        Ok(NodeArgs {
+            crate_alias,
+            node_type,
+        })
+    }
+}
 
 #[proc_macro_attribute]
-pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let args = parse_macro_input!(attr as NodeArgs);
+    let mut input_impl = parse_macro_input!(item as ItemImpl);
+
+    let add_type = |input_impl: &mut ItemImpl, type_name| {
+        let ident = syn::Ident::new(type_name, proc_macro2::Span::call_site());
+        let assoc_type: syn::ImplItemType = syn::parse_quote! {
+            type #ident = ();
+        };
+        input_impl.items.insert(0, ImplItem::Type(assoc_type));
+    };
+
+    let has_input = has_assoc_type(&input_impl, "Input");
+
+    if !has_input {
+        add_type(&mut input_impl, "Input");
+    }
+
+    let has_output = has_assoc_type(&input_impl, "Output");
+
+    if !has_output {
+        add_type(&mut input_impl, "Output");
+    }
+
+    let struct_name = match &*input_impl.self_ty {
+        syn::Type::Path(tp) => tp.path.clone(),
+        other => {
+            return syn::Error::new_spanned(
+                other,
+                "#[node] sadece isimlendirilmiş tipler için kullanılabilir",
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+
+    let struct_path: proc_macro2::TokenStream = if let Some(nt) = &args.node_type {
+        syn::parse_str(nt)
+            .unwrap_or_else(|e| panic!("node_type geçerli bir path değil: {nt:?} ({e})"))
+    } else {
+        quote! { #struct_name }
+    };
+
+    let bt_manager_crate: proc_macro2::TokenStream = if let Some(alias) = &args.crate_alias {
+        let ident = syn::Ident::new(alias, proc_macro2::Span::call_site());
+        quote! { ::#ident }
+    } else {
+        quote! { ::bt_manager }
+    };
+
+    let struct_ident = &struct_name.segments.last().unwrap().ident;
+    let macro_name = syn::Ident::new(
+        &struct_ident.to_string().to_snake_case(),
+        struct_ident.span(),
+    );
+
+    let macro_name_i = format_ident!("{}_i", macro_name);
+    let macro_name_o = format_ident!("{}_o", macro_name);
+    let macro_name_io = format_ident!("{}_io", macro_name);
+
+    let mut added_macros = Vec::new();
+
+    if has_input && has_output {
+        added_macros.push(quote! {
+            #[macro_export]
+            macro_rules! #macro_name_io {
+                ($input:expr, $output:expr $(,)?) => {
+                    #bt_manager_crate::CustomNode::<#struct_path>::new_io($input, $output)
+                };
+            }
+        });
+    }
+
+    if has_input {
+        added_macros.push(quote! {
+            #[macro_export]
+            macro_rules! #macro_name_i {
+                ( $input:expr $(,)? ) => {
+                    #bt_manager_crate::CustomNode::<#struct_path>::new_i($input)
+                };
+            }
+        });
+    }
+
+    if has_output {
+        added_macros.push(quote! {
+            #[macro_export]
+            macro_rules! #macro_name_o {
+                ( $output:expr $(,)? ) => {
+                    #bt_manager_crate::CustomNode::<#struct_path>::new_o($output)
+                };
+            }
+        });
+    }
+
+    let expanded = quote! {
+        #input_impl
+
+        #[macro_export]
+        macro_rules! #macro_name {
+            () => {
+                #bt_manager_crate::CustomNode::<#struct_path>::new()
+            };
+        }
+
+        #(#added_macros)*
+
+    };
+
+    expanded.into()
+}
+
+#[proc_macro_attribute]
+pub fn node_(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemMod);
     let mod_name = &input.ident;
     let mod_name_string = mod_name.to_string();
@@ -75,7 +250,7 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     pub comment: Option<String>,
                 }
 
-                impl crate::executable::exec::Executable<super::Data> for NodeManager {
+                impl ::bt_manager::executable::exec::Executable<super::Data> for NodeManager {
                     fn start(&mut self, data: &mut super::Data) {
                         self.node = Some(Box::new(super::Node::default()));
                         let input_data = self.input_handle.as_ref()(data);
@@ -88,7 +263,7 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                         self.node.as_mut().unwrap().start(&mut custom_data);
                     }
 
-                    fn execute(&mut self, data: &mut super::Data) -> crate::executable::exec::States {
+                    fn execute(&mut self, data: &mut super::Data) -> ::bt_manager::executable::exec::States {
                         let input_data = self.input_handle.as_ref()(data);
                         let mut output_data = self.output_handle.borrow_mut();
                         let mut custom_data = super::CustomData {
@@ -112,12 +287,12 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     }
                 }
 
-                impl crate::executable::exec::ExecutableWatch for NodeManager {
-                    fn get_content(&self) -> crate::executable::exec::WatchContent {
-                        crate::executable::exec::WatchContent {
-                            node_type: crate::executable::exec::NodeTypes::Leaf,
+                impl ::bt_manager::executable::exec::ExecutableWatch for NodeManager {
+                    fn get_content(&self) -> ::bt_manager::executable::exec::WatchContent {
+                        ::bt_manager::executable::exec::WatchContent {
+                            node_type: ::bt_manager::executable::exec::NodeTypes::Leaf,
                             name: #mod_name_string.to_string(),
-                            watch_state: crate::executable::exec::WatchState::None,
+                            watch_state: ::bt_manager::executable::exec::WatchState::None,
                             childs: Vec::new(),
                             comment: self.comment.clone(),
                         }
@@ -133,57 +308,6 @@ pub fn node(_attr: TokenStream, item: TokenStream) -> TokenStream {
             };
         }
 
-    };
-
-    TokenStream::from(expanded)
-}
-
-fn add_wrap(input: TokenStream) -> TokenStream {
-    let input_str = input.to_string();
-    let wrapped_str = format!("({})", input_str);
-    wrapped_str.parse().unwrap()
-}
-
-#[proc_macro]
-pub fn handle(input: TokenStream) -> TokenStream {
-    let wrapped_input = add_wrap(input);
-    let input = parse_macro_input!(wrapped_input as syn::ExprTuple);
-
-    let var_name = match &input.elems[0] {
-        Expr::Path(path) => path.path.segments.last().unwrap().ident.clone(),
-        _ => panic!("Input must be a valid identifier"),
-    };
-    let data = &input.elems[1];
-
-    let number = match &input.elems[2] {
-        Expr::Lit(lit) => {
-            if let Lit::Int(lit_int) = &lit.lit {
-                let value: usize = lit_int.base10_parse().unwrap();
-                value
-            } else {
-                panic!("3. param must be an integer");
-            }
-        }
-        _ => panic!("3. param must be an integer"),
-    };
-
-    let extra = if number > 1 {
-        (1..number)
-            .map(|ref i| {
-                let extra_name = format_ident!("{}{}", var_name, i.to_string());
-
-                quote! {
-                    let #extra_name = std::rc::Rc::clone(&#var_name);
-                }
-            })
-            .collect()
-    } else {
-        quote! {}
-    };
-
-    let expanded = quote! {
-        let #var_name = std::rc::Rc::new(std::cell::RefCell::new(#data));
-        #extra
     };
 
     TokenStream::from(expanded)

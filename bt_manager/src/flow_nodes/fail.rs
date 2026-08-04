@@ -69,6 +69,6 @@ impl<T> Fail<T> {
 #[macro_export]
 macro_rules! fail {
     ( $x:expr $(,)? ) => {
-        Fail::new($x)
+        $crate::Fail::new($x)
     };
 }

@@ -101,6 +101,6 @@ impl<T> Reactive<T> {
 #[macro_export]
 macro_rules! reactive {
     ( $( $x:expr ),* $(,)? ) => {
-        Reactive::new(vec![ $( $x ),* ])
+        $crate::Reactive::new(vec![ $( $x ),* ])
     };
 }

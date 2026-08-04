@@ -70,6 +70,6 @@ impl<T> Success<T> {
 #[macro_export]
 macro_rules! success {
     ( $x:expr $(,)? ) => {
-        Success::new($x)
+        $crate::Success::new($x)
     };
 }

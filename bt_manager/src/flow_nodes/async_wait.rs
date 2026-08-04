@@ -101,6 +101,6 @@ impl<T> AsyncWait<T> {
 #[macro_export]
 macro_rules! async_wait {
     ( $( $x:expr ),* $(,)? ) => {
-        AsyncWait::new(vec![ $( $x ),* ])
+        $crate::AsyncWait::new(vec![ $( $x ),* ])
     };
 }

@@ -89,6 +89,6 @@ impl<T> AsyncFirst<T> {
 #[macro_export]
 macro_rules! async_first {
     ( $( $x:expr ),* $(,)? ) => {
-        AsyncFirst::new(vec![ $( $x ),* ])
+        $crate::AsyncFirst::new(vec![ $( $x ),* ])
     };
 }
