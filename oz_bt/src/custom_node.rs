@@ -166,8 +166,26 @@ fn get_node_name<T>() -> String {
 
 #[macro_export]
 macro_rules! with {
-    ([$($name:ident),+ $(,)?], $body:expr) => {{
-        $(let $name = $name.clone();)+
+    ([$($items:tt)*], $body:expr) => {{
+        $crate::with!(@parse [$($items)*]);
         $body
     }};
+
+    (@parse []) => {};
+
+    (@parse [$name:ident = $val:expr, $($rest:tt)*]) => {
+        let $name = std::rc::Rc::new(std::cell::RefCell::new($val));
+        $crate::with!(@parse [$($rest)*]);
+    };
+    (@parse [$name:ident = $val:expr]) => {
+        let $name = std::rc::Rc::new(std::cell::RefCell::new($val));
+    };
+
+    (@parse [$name:ident, $($rest:tt)*]) => {
+        let $name = $name.clone();
+        $crate::with!(@parse [$($rest)*]);
+    };
+    (@parse [$name:ident]) => {
+        let $name = $name.clone();
+    };
 }

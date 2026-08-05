@@ -121,15 +121,18 @@ mod tests {
                     println!("yazdırıldı! {}", data.dt);
                     true
                 }),
-                sequence![
-                    sleep_i!(move |_| 2.0),
-                    sleep_i!(move |_| 2.0),
-                    sleep_i!(move |_| 2.0),
-                    sleep_i!(move |_| 2.0),
-                    sleep_i!(move |_| 2.0),
-                    sleep_i!(move |_| 2.0),
-                    sleep_i!(move |_| 2.0),
-                ],
+                with!(
+                    [my_input, my_test = 5.0],
+                    sequence![
+                        with!([my_test], sleep_i!(move |_| my_test.get())),
+                        with!([my_test], sleep_i!(move |_| my_test.get())),
+                        sleep_i!(move |_| my_input.get()),
+                        sleep_i!(move |_| 2.0),
+                        sleep_i!(move |_| 2.0),
+                        sleep_i!(move |_| 2.0),
+                        sleep_i!(move |_| 2.0),
+                    ]
+                )
             ]],
             10.0,
         );
