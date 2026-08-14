@@ -1,12 +1,9 @@
+use darling::ast::NestedMeta;
+use darling::FromMeta;
 use heck::ToSnakeCase;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input,
-    punctuated::Punctuated,
-    Expr, ExprLit, ImplItem, ImplItemType, ItemImpl, Lit, Meta, Token,
-};
+use syn::{parse_macro_input, ImplItem, ImplItemType, ItemImpl};
 
 fn has_assoc_type(input_impl: &syn::ItemImpl, name: &str) -> bool {
     input_impl
@@ -15,58 +12,25 @@ fn has_assoc_type(input_impl: &syn::ItemImpl, name: &str) -> bool {
         .any(|item| matches!(item, ImplItem::Type(ImplItemType { ident, .. }) if ident == name))
 }
 
+#[derive(Debug, FromMeta)]
 struct NodeArgs {
+    #[darling(rename = "crate")]
     crate_alias: Option<String>,
     node_type: Option<String>,
 }
 
-impl Parse for NodeArgs {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let mut crate_alias = None;
-        let mut node_type = None;
-
-        let metas = Punctuated::<Meta, Token![,]>::parse_terminated(input)?;
-        for meta in metas {
-            let nv = match meta {
-                Meta::NameValue(nv) => nv,
-                other => {
-                    return Err(syn::Error::new_spanned(
-                        other,
-                        "beklenen format: crate = \"...\" veya node_type = \"...\"",
-                    ))
-                }
-            };
-            let value = match &nv.value {
-                Expr::Lit(ExprLit {
-                    lit: Lit::Str(s), ..
-                }) => s.value(),
-                _ => {
-                    return Err(syn::Error::new_spanned(
-                        &nv.value,
-                        "değer string literal olmalı",
-                    ))
-                }
-            };
-
-            if nv.path.is_ident("crate") {
-                crate_alias = Some(value);
-            } else if nv.path.is_ident("node_type") {
-                node_type = Some(value);
-            } else {
-                return Err(syn::Error::new_spanned(&nv.path, "bilinmeyen parametre"));
-            }
-        }
-
-        Ok(NodeArgs {
-            crate_alias,
-            node_type,
-        })
-    }
-}
-
 #[proc_macro_attribute]
 pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
-    let args = parse_macro_input!(attr as NodeArgs);
+    let attr_args = match NestedMeta::parse_meta_list(attr.into()) {
+        Ok(v) => v,
+        Err(e) => return darling::Error::from(e).write_errors().into(),
+    };
+
+    let args = match NodeArgs::from_list(&attr_args) {
+        Ok(v) => v,
+        Err(e) => return e.write_errors().into(),
+    };
+
     let mut input_impl = parse_macro_input!(item as ItemImpl);
 
     let add_type = |input_impl: &mut ItemImpl, type_name| {

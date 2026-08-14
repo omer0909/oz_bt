@@ -11,3 +11,4 @@ proc-macro2 = "1.0"
 syn = { version = "3.0", features = ["full"] }
 quote = "1.0"
 heck = "0.5"
+darling = "0.24"
