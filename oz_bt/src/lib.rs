@@ -14,6 +14,7 @@ pub use flow_nodes::group_in::GroupIn;
 pub use flow_nodes::group_out::GroupOut;
 pub use flow_nodes::invert::Invert;
 pub use flow_nodes::reactive::Reactive;
+pub use flow_nodes::retry::Retry;
 pub use flow_nodes::sequence::Sequence;
 pub use flow_nodes::success::Success;
 

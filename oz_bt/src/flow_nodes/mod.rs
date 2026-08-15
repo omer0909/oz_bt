@@ -6,5 +6,6 @@ pub mod group_in;
 pub mod group_out;
 pub mod invert;
 pub mod reactive;
+pub mod retry;
 pub mod sequence;
 pub mod success;

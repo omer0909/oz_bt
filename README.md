@@ -1,7 +1,13 @@
 # oz_bt
 
-[![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p align="center">
+  <a href="https://github.com/omer0909/oz_bt/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/omer0909/oz_bt" alt="License">
+  </a>
+  <a href="https://github.com/omer0909/oz_bt/pulls">
+    <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen.svg" alt="PRs Welcome">
+  </a>
+</p>
 
 > **A high-performance Behavior Tree framework designed for general robot management and autonomous agent control.**  
 > Built in Rust with real-time monitoring, async execution, and modular node architecture.
@@ -22,7 +28,7 @@ The behavior tree execution can be observed in real-time using the companion vis
 
 - **Behavior Tree Core**: Full implementation of BT primitives with `Running | Success | Fail` state model
 - **Robot-Oriented Design**: Optimized for general robot management, task planning, and autonomous decision loops
-- **Flow Control Nodes**: Sequence, Fallback, AsyncFirst, AsyncWait, Invert, Reactive, Success, Fail
+- **Flow Control Nodes**: Sequence, Fallback, AsyncFirst, AsyncWait, Invert, Reactive, Success, Fail, Retry
 - **Custom Nodes**: Define leaf nodes using the `#[node]` procedural macro with typed inputs/outputs
 - **Convenience Macros**: `sequence![]`, `fallback![]`, and `with!{}` macros for ergonomic tree construction
 - **Event System**: Event-driven nodes for reactive behaviors
@@ -41,7 +47,7 @@ oz_bt_workspace/
 │   ├── tree_manger # Execution manager with tick loop
 │   ├── flow_nodes  # Built-in composite & decorator nodes
 │   ├── custom_node # User-defined leaf node framework
-│   └── event_node  # Event-driven reactive nodes
+│   └── event_node  # Basic function call node
 └── oz_bt_macro/    # Procedural macros for #[node]
 ```
 
@@ -57,74 +63,78 @@ oz_bt = { git = "https://github.com/omer0909/oz_bt" }
 ### Define a Custom Node
 
 ```rust
-use oz_bt::{node, Ctx, States, Node};
+use oz_bt::*;
 
-#[node]
-struct MoveToGoal {
-    Input: (f32, f32),
-    Output: bool,
+struct App {
+    my_data: f32,
+    dt: f32,
 }
 
-impl Node for MoveToGoal {
-    fn execute(&mut self, ctx: &mut Ctx<Self>) -> States {
-        let (x, y) = ctx.input;
-        // Robot navigation logic here
-        ctx.output = true;
-        States::Success
+#[derive(Default)]
+struct Sleep {
+    elapsed: f32,
+}
+
+#[node(node_type = "$crate::Sleep")]
+impl Node for Sleep {
+    type Data = App;
+    type Input = f32;
+    type Output = f32;
+
+    fn execute(&mut self, ctx: &mut Ctx<Self>) -> crate::exec::States {
+        if self.elapsed >= *ctx.input {
+            return crate::exec::States::Success;
+        }
+
+        self.elapsed += ctx.data.dt;
+        *ctx.output = self.elapsed;
+
+        crate::exec::States::Running
     }
 }
 ```
 
-### Build and Run a Tree
+### Example Tree
 
 All `new()` constructors return `Box<dyn ExecutableAndWatch<T>>` directly, so no manual boxing is needed:
 
 ```rust
-use oz_bt::{TreeManager, Sequence, Fallback, CustomNode, handle};
-
-fn main() {
-    // Create a behavior tree using convenience macros
-    let root = sequence![
-        move_to_goal_i!(|data| (data.target_x, data.target_y)),
-        fallback![
-            check_obstacle::new(),
-            invert!(emergency_stop::new()),
-        ],
-        async_first![
-            wait_for_signal::new(),
-            timeout_after_5s::new(),
-        ],
-    ];
-
-    // Manage execution at 30 Hz
-    let mut manager = TreeManager::new(root, 30.0);
-
-    // In your robot control loop:
-    loop {
-        let status = manager.execute(&mut robot_data);
-        let dt = manager.sleep_loop();
-        // dt contains the actual elapsed time since last tick
-    }
-}
-```
-
-### Shared State with `with!` Macro
-
-Easily share handles between nodes using the `with!` macro:
-
-```rust
-use oz_bt::with;
-
-with! {
-    shared_flag = false,
-    shared_counter = 0,
-    {
-        let root = sequence![
-            set_flag::new_o(shared_flag),
-            read_flag::new_i(|_| *shared_flag.get()),
-        ];
-    }
-}
+let elapsed = handle(0.0);
+let root = sequence![
+    sleep_i!(|app| app.my_data),
+    success!(fallback![
+        event_node!("example", |_| false),
+        invert!(sleep_i!(|app| app.my_data)),
+    ]),
+    async_first![
+        with!([elapsed], sleep_io!(|_| 5.0, elapsed)),
+        retry!(with!(
+            [elapsed],
+            event_node!("print", move |_| {
+                println!("elapsed: {}", elapsed.get());
+                false
+            })
+        )),
+        retry!(fail!(sleep_i!(|_| 0.01)))
+    ],
+    with!(
+        [data = 0.0],
+        sequence![
+            event_node!("check", |app: &mut App| { app.my_data > 1.0 }),
+            with!(
+                [data],
+                event_node!("writer", move |_| {
+                    data.set(5.0);
+                    true
+                })
+            ),
+            group_in!(
+                "exaple group",
+                with!([data], sleep_i!(move |_| elapsed.get()))
+            )
+        ]
+    )
+];
 ```
 
 ## Node Types
@@ -132,11 +142,10 @@ with! {
 | Category | Nodes | Description |
 |----------|-------|-------------|
 | **Composites** | `Sequence`, `Fallback`, `AsyncFirst`, `AsyncWait` | Control flow branching |
-| **Decorators** | `Invert`, `Reactive` | Modify child behavior |
-| **Leaf** | `Success`, `Fail` | Terminal states |
+| **Decorators** | `Invert`, `Reactive`, `Success`, `Fail`, `Retry` | Modify child behavior |
 | **Custom** | `CustomNode<T>` | User-defined via `#[node]` macro |
 | **Grouping** | `GroupIn`, `GroupOut` | Sub-tree encapsulation |
-| **Events** | `EventNode` | Reactive event handling |
+| **Event** | `EventNode` | Basic function call |
 
 ## Visualization Protocol
 
@@ -152,7 +161,3 @@ Connect the `TreeManager` to [oz_bt_visualizer](https://github.com/omer0909/oz_b
 
 - Rust 2021 edition or newer
 - ZeroMQ (for visualizer integration)
-
-## License
-
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.

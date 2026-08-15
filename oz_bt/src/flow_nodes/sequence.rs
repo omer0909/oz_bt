@@ -55,9 +55,7 @@ impl<T> Executable<T> for Sequence<T> {
     }
 
     fn end(&mut self, data: &mut T) {
-        if self.counter < self.nodes.len() {
-            let node = &mut self.nodes[self.counter];
-
+        if let Some(node) = self.nodes.get_mut(self.counter) {
             if node.watch_state == WatchState::Running {
                 node.node.end(data);
                 node.watch_state = WatchState::Cancelled;
