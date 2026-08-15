@@ -55,11 +55,11 @@ impl<T> Executable<T> for Fallback<T> {
     }
 
     fn end(&mut self, data: &mut T) {
-        let node = &mut self.nodes[self.counter];
-
-        if node.watch_state == WatchState::Running {
-            node.node.end(data);
-            node.watch_state = WatchState::Cancelled;
+        if let Some(node) = self.nodes.get_mut(self.counter) {
+            if node.watch_state == WatchState::Running {
+                node.node.end(data);
+                node.watch_state = WatchState::Cancelled;
+            }
         }
     }
 }
