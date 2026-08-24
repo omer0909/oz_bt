@@ -75,7 +75,7 @@ struct Sleep {
     elapsed: f32,
 }
 
-#[node(node_type = "$crate::Sleep")]
+#[node]
 impl Node for Sleep {
     type Data = App;
     type Input = f32;
