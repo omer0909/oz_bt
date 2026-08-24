@@ -107,31 +107,25 @@ let root = sequence![
         invert(sleep_i(|app| app.my_data)),
     ]),
     async_first![
-        with!([elapsed], sleep_io(|_| 5.0, elapsed)),
-        retry(with!(
-            [elapsed],
-            event_node("print", move |_| {
-                println!("elapsed: {}", elapsed.get());
-                false
-            })
-        )),
+        sleep_io(|_| 5.0, elapsed.clone()),
+        retry(event_node("print", move |_| {
+            println!("elapsed: {}", elapsed.get());
+            false
+        })),
         retry(fail(sleep_i(|_| 0.1)))
     ],
-    with!(
+    handle!(
         [data = 0.0],
         sequence![
             event_node("check", |app: &mut App| { app.my_data > 1.0 }),
-            with!(
-                [data],
-                event_node("writer", move |_| {
+            event_node(
+                "writer",
+                clone!([data], move |_| {
                     data.set(5.0);
                     true
                 })
             ),
-            group_in(
-                "exaple group",
-                with!([data], sleep_i(move |_| elapsed.get()))
-            )
+            group_in("exaple group", sleep_i(clone!([data], move |_| data.get())))
         ]
     )
 ];

@@ -10,10 +10,6 @@ struct App {
     dt: f32,
 }
 
-struct Asd {
-    dt: f32,
-}
-
 #[node]
 impl Node for Sleep {
     type Data = App;
@@ -54,14 +50,14 @@ mod tests {
             dt: 1.0,
         };
         let my_input = handle(2.0);
-        println!("{}", with!([my_input], my_input.get()));
+        println!("{}", clone!([my_input], my_input.get()));
         let mut tree_manager: TreeManager<App> = TreeManager::new(
             sequence![sequence![
                 ::oz_bt::CustomNode::<Sleep>::new_i(|_| 5.0),
                 async_first![sleep_i(|_| 2.0), sleep_i(|_| 1.0)],
-                with!([my_input], sleep_io(move |_| 2.0, my_input)),
+                sleep_io(move |_| 2.0, my_input.clone()),
                 invert(
-                    fail(with!([my_input], sleep_i(move |_| my_input.get())))
+                    fail(sleep_i(clone!([my_input], move |_| my_input.get())))
                         .comment("comment asdasdasdasd")
                 ),
                 sleep_i(move |_| 2.0),
@@ -129,11 +125,11 @@ mod tests {
                     println!("yazdırıldı! {}", data.dt);
                     true
                 }),
-                with!(
-                    [my_input, my_test = 5.0],
+                handle!(
+                    [my_test = 5.0],
                     sequence![
-                        with!([my_test], sleep_i(move |_| my_test.get())),
-                        with!([my_test], sleep_i(move |_| my_test.get())),
+                        sleep_i(clone!([my_test], move |_| my_test.get())),
+                        sleep_i(clone!([my_test], move |_| my_test.get())),
                         sleep_i(move |_| my_input.get()),
                         sleep_i(move |_| 2.0),
                         sleep_i(move |_| 2.0),
@@ -191,31 +187,25 @@ mod tests {
                 invert(sleep_i(|app| app.my_data)),
             ]),
             async_first![
-                with!([elapsed], sleep_io(|_| 5.0, elapsed)),
-                retry(with!(
-                    [elapsed],
-                    event_node("print", move |_| {
-                        println!("elapsed: {}", elapsed.get());
-                        false
-                    })
-                )),
+                sleep_io(|_| 5.0, elapsed.clone()),
+                retry(event_node("print", move |_| {
+                    println!("elapsed: {}", elapsed.get());
+                    false
+                })),
                 retry(fail(sleep_i(|_| 0.1)))
             ],
-            with!(
+            handle!(
                 [data = 0.0],
                 sequence![
                     event_node("check", |app: &mut App| { app.my_data > 1.0 }),
-                    with!(
-                        [data],
-                        event_node("writer", move |_| {
+                    event_node(
+                        "writer",
+                        clone!([data], move |_| {
                             data.set(5.0);
                             true
                         })
                     ),
-                    group_in(
-                        "exaple group",
-                        with!([data], sleep_i(move |_| elapsed.get()))
-                    )
+                    group_in("exaple group", sleep_i(clone!([data], move |_| data.get())))
                 ]
             )
         ];
