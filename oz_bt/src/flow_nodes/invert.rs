@@ -71,9 +71,6 @@ impl<T> Invert<T> {
     }
 }
 
-#[macro_export]
-macro_rules! invert {
-    ( $x:expr $(,)? ) => {
-        $crate::Invert::new($x)
-    };
+pub fn invert<T>(node: Box<dyn ExecutableAndWatch<T>>) -> Box<Invert<T>> {
+    Invert::new(node)
 }

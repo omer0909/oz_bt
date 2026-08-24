@@ -101,36 +101,36 @@ All `new()` constructors return `Box<dyn ExecutableAndWatch<T>>` directly, so no
 ```rust
 let elapsed = handle(0.0);
 let root = sequence![
-    sleep_i!(|app| app.my_data),
-    success!(fallback![
-        event_node!("example", |_| false),
-        invert!(sleep_i!(|app| app.my_data)),
+    sleep_i(|app| app.my_data),
+    success(fallback![
+        event_node("example", |_| false),
+        invert(sleep_i(|app| app.my_data)),
     ]),
     async_first![
-        with!([elapsed], sleep_io!(|_| 5.0, elapsed)),
-        retry!(with!(
+        with!([elapsed], sleep_io(|_| 5.0, elapsed)),
+        retry(with!(
             [elapsed],
-            event_node!("print", move |_| {
+            event_node("print", move |_| {
                 println!("elapsed: {}", elapsed.get());
                 false
             })
         )),
-        retry!(fail!(sleep_i!(|_| 0.01)))
+        retry(fail(sleep_i(|_| 0.1)))
     ],
     with!(
         [data = 0.0],
         sequence![
-            event_node!("check", |app: &mut App| { app.my_data > 1.0 }),
+            event_node("check", |app: &mut App| { app.my_data > 1.0 }),
             with!(
                 [data],
-                event_node!("writer", move |_| {
+                event_node("writer", move |_| {
                     data.set(5.0);
                     true
                 })
             ),
-            group_in!(
+            group_in(
                 "exaple group",
-                with!([data], sleep_i!(move |_| elapsed.get()))
+                with!([data], sleep_i(move |_| elapsed.get()))
             )
         ]
     )

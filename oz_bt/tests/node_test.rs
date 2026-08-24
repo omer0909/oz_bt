@@ -14,7 +14,7 @@ struct Asd {
     dt: f32,
 }
 
-#[node(node_type = "$crate::Sleep")]
+#[node]
 impl Node for Sleep {
     type Data = App;
     type Input = f32;
@@ -58,85 +58,87 @@ mod tests {
         let mut tree_manager: TreeManager<App> = TreeManager::new(
             sequence![sequence![
                 ::oz_bt::CustomNode::<Sleep>::new_i(|_| 5.0),
-                async_first![sleep_i!(|_| 2.0), sleep_i!(|_| 1.0)],
-                with!([my_input], sleep_io!(move |_| 2.0, my_input)),
-                invert!(fail!(with!([my_input], sleep_i!(move |_| my_input.get())))
-                    .comment("comment asdasdasdasd")),
-                sleep_i!(move |_| 2.0),
-                group_in!(
+                async_first![sleep_i(|_| 2.0), sleep_i(|_| 1.0)],
+                with!([my_input], sleep_io(move |_| 2.0, my_input)),
+                invert(
+                    fail(with!([my_input], sleep_i(move |_| my_input.get())))
+                        .comment("comment asdasdasdasd")
+                ),
+                sleep_i(move |_| 2.0),
+                group_in(
                     "test group",
                     fallback![
-                        group_in!(
+                        group_in(
                             "my group",
                             fallback![
-                                event_node!("asf", |_: &mut App| {
+                                event_node("asf", |_: &mut App| {
                                     println!("yazmadı");
                                     false
                                 }),
-                                group_out!(
+                                group_out(
                                     "çıkacak",
-                                    event_node!("test", |data: &mut App| {
+                                    event_node("test", |data: &mut App| {
                                         println!("yazdırıldı! {}", data.dt);
                                         true
                                     })
                                 ),
-                                group_out!(
+                                group_out(
                                     "çıkmış",
-                                    event_node!("geliş", |data: &mut App| {
+                                    event_node("geliş", |data: &mut App| {
                                         println!("yazdırıldı! {}", data.dt);
                                         true
                                     })
                                 ),
-                                group_out!(
+                                group_out(
                                     "i",
-                                    event_node!("geliş", |data: &mut App| {
+                                    event_node("geliş", |data: &mut App| {
                                         println!("yazdırıldı! {}", data.dt);
                                         true
                                     })
                                 ),
-                                group_out!(
+                                group_out(
                                     "test",
-                                    event_node!("geliş", |data: &mut App| {
+                                    event_node("geliş", |data: &mut App| {
                                         println!("yazdırıldı! {}", data.dt);
                                         true
                                     })
                                 ),
-                                group_out!(
+                                group_out(
                                     "",
-                                    event_node!("geliş", |data: &mut App| {
+                                    event_node("geliş", |data: &mut App| {
                                         println!("yazdırıldı! {}", data.dt);
                                         true
                                     })
                                 ),
                             ]
                         ),
-                        event_node!("oldu", |_: &mut App| {
+                        event_node("oldu", |_: &mut App| {
                             println!("yazmadı");
                             false
                         }),
-                        group_out!(
+                        group_out(
                             "out",
-                            event_node!("fff", |data: &mut App| {
+                            event_node("fff", |data: &mut App| {
                                 println!("yazdırıldı! {}", data.dt);
                                 true
                             })
                         ),
                     ]
                 ),
-                event_node!("<<<<zzz", |data: &mut App| {
+                event_node("<<<<zzz", |data: &mut App| {
                     println!("yazdırıldı! {}", data.dt);
                     true
                 }),
                 with!(
                     [my_input, my_test = 5.0],
                     sequence![
-                        with!([my_test], sleep_i!(move |_| my_test.get())),
-                        with!([my_test], sleep_i!(move |_| my_test.get())),
-                        sleep_i!(move |_| my_input.get()),
-                        sleep_i!(move |_| 2.0),
-                        sleep_i!(move |_| 2.0),
-                        sleep_i!(move |_| 2.0),
-                        sleep_i!(move |_| 2.0),
+                        with!([my_test], sleep_i(move |_| my_test.get())),
+                        with!([my_test], sleep_i(move |_| my_test.get())),
+                        sleep_i(move |_| my_input.get()),
+                        sleep_i(move |_| 2.0),
+                        sleep_i(move |_| 2.0),
+                        sleep_i(move |_| 2.0),
+                        sleep_i(move |_| 2.0),
                     ]
                 )
             ]],
@@ -183,36 +185,36 @@ mod tests {
         // Create a behavior tree using convenience macros
         let elapsed = handle(0.0);
         let root = sequence![
-            sleep_i!(|app| app.my_data),
-            success!(fallback![
-                event_node!("example", |_| false),
-                invert!(sleep_i!(|app| app.my_data)),
+            sleep_i(|app| app.my_data),
+            success(fallback![
+                event_node("example", |_| false),
+                invert(sleep_i(|app| app.my_data)),
             ]),
             async_first![
-                with!([elapsed], sleep_io!(|_| 5.0, elapsed)),
-                retry!(with!(
+                with!([elapsed], sleep_io(|_| 5.0, elapsed)),
+                retry(with!(
                     [elapsed],
-                    event_node!("print", move |_| {
+                    event_node("print", move |_| {
                         println!("elapsed: {}", elapsed.get());
                         false
                     })
                 )),
-                retry!(fail!(sleep_i!(|_| 0.1)))
+                retry(fail(sleep_i(|_| 0.1)))
             ],
             with!(
                 [data = 0.0],
                 sequence![
-                    event_node!("check", |app: &mut App| { app.my_data > 1.0 }),
+                    event_node("check", |app: &mut App| { app.my_data > 1.0 }),
                     with!(
                         [data],
-                        event_node!("writer", move |_| {
+                        event_node("writer", move |_| {
                             data.set(5.0);
                             true
                         })
                     ),
-                    group_in!(
+                    group_in(
                         "exaple group",
-                        with!([data], sleep_i!(move |_| elapsed.get()))
+                        with!([data], sleep_i(move |_| elapsed.get()))
                     )
                 ]
             )

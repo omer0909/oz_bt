@@ -39,9 +39,9 @@ impl<T> EventNode<T> {
     }
 }
 
-#[macro_export]
-macro_rules! event_node {
-    ($name:expr, $event:expr $(,)?) => {
-        $crate::EventNode::new($name, $event)
-    };
+pub fn event_node<T>(
+    event_name: &str,
+    event: impl Fn(&mut T) -> bool + 'static,
+) -> Box<EventNode<T>> {
+    EventNode::new(event_name, event)
 }

@@ -67,9 +67,6 @@ impl<T> Success<T> {
     }
 }
 
-#[macro_export]
-macro_rules! success {
-    ( $x:expr $(,)? ) => {
-        $crate::Success::new($x)
-    };
+pub fn success<T>(node: Box<dyn ExecutableAndWatch<T>>) -> Box<Success<T>> {
+    Success::new(node)
 }

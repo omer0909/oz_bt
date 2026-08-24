@@ -66,9 +66,6 @@ impl<T> Fail<T> {
     }
 }
 
-#[macro_export]
-macro_rules! fail {
-    ( $x:expr $(,)? ) => {
-        $crate::Fail::new($x)
-    };
+pub fn fail<T>(node: Box<dyn ExecutableAndWatch<T>>) -> Box<Fail<T>> {
+    Fail::new(node)
 }

@@ -8,17 +8,24 @@ pub use tree_manger::TreeManager;
 mod flow_nodes;
 pub use flow_nodes::async_first::AsyncFirst;
 pub use flow_nodes::async_wait::AsyncWait;
+pub use flow_nodes::fail::fail;
 pub use flow_nodes::fail::Fail;
 pub use flow_nodes::fallback::Fallback;
+pub use flow_nodes::group_in::group_in;
 pub use flow_nodes::group_in::GroupIn;
+pub use flow_nodes::group_out::group_out;
 pub use flow_nodes::group_out::GroupOut;
+pub use flow_nodes::invert::invert;
 pub use flow_nodes::invert::Invert;
 pub use flow_nodes::reactive::Reactive;
+pub use flow_nodes::retry::retry;
 pub use flow_nodes::retry::Retry;
 pub use flow_nodes::sequence::Sequence;
+pub use flow_nodes::success::success;
 pub use flow_nodes::success::Success;
 
 mod event_node;
+pub use event_node::event_node;
 pub use event_node::EventNode;
 
 mod custom_node;

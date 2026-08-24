@@ -69,9 +69,6 @@ impl<T> GroupOut<T> {
     }
 }
 
-#[macro_export]
-macro_rules! group_out {
-    ($name:expr, $node:expr $(,)?) => {
-        $crate::GroupOut::new($name, $node)
-    };
+pub fn group_out<T>(branch_name: &str, node: Box<dyn ExecutableAndWatch<T>>) -> Box<GroupOut<T>> {
+    GroupOut::new(branch_name, node)
 }

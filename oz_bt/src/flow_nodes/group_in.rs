@@ -69,9 +69,6 @@ impl<T> GroupIn<T> {
     }
 }
 
-#[macro_export]
-macro_rules! group_in {
-    ($name:expr, $node:expr $(,)?) => {
-        $crate::GroupIn::new($name, $node)
-    };
+pub fn group_in<T>(group_name: &str, node: Box<dyn ExecutableAndWatch<T>>) -> Box<GroupIn<T>> {
+    GroupIn::new(group_name, node)
 }

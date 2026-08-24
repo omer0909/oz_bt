@@ -82,9 +82,6 @@ impl<T> Retry<T> {
     }
 }
 
-#[macro_export]
-macro_rules! retry {
-    ( $x:expr $(,)? ) => {
-        $crate::Retry::new($x)
-    };
+pub fn retry<T>(node: Box<dyn ExecutableAndWatch<T>>) -> Box<Retry<T>> {
+    Retry::new(node)
 }

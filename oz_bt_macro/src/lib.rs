@@ -16,7 +16,6 @@ fn has_assoc_type(input_impl: &syn::ItemImpl, name: &str) -> bool {
 struct NodeArgs {
     #[darling(rename = "crate")]
     crate_alias: Option<String>,
-    node_type: Option<String>,
 }
 
 #[proc_macro_attribute]
@@ -53,7 +52,7 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
         add_type(&mut input_impl, "Output");
     }
 
-    let struct_name = match &*input_impl.self_ty {
+    let struct_path = match &*input_impl.self_ty {
         syn::Type::Path(tp) => tp.path.clone(),
         other => {
             return syn::Error::new_spanned(
@@ -65,13 +64,6 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
 
-    let struct_path: proc_macro2::TokenStream = if let Some(nt) = &args.node_type {
-        syn::parse_str(nt)
-            .unwrap_or_else(|e| panic!("node_type geçerli bir path değil: {nt:?} ({e})"))
-    } else {
-        quote! { #struct_name }
-    };
-
     let oz_bt_crate: proc_macro2::TokenStream = if let Some(alias) = &args.crate_alias {
         let ident = syn::Ident::new(alias, proc_macro2::Span::call_site());
         quote! { ::#ident }
@@ -79,47 +71,45 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
         quote! { ::oz_bt }
     };
 
-    let struct_ident = &struct_name.segments.last().unwrap().ident;
-    let macro_name = syn::Ident::new(
+    let struct_ident = &struct_path.segments.last().unwrap().ident;
+    let helper_name = syn::Ident::new(
         &struct_ident.to_string().to_snake_case(),
         struct_ident.span(),
     );
 
-    let macro_name_i = format_ident!("{}_i", macro_name);
-    let macro_name_o = format_ident!("{}_o", macro_name);
-    let macro_name_io = format_ident!("{}_io", macro_name);
+    let helper_name_i = format_ident!("{}_i", helper_name);
+    let helper_name_o = format_ident!("{}_o", helper_name);
+    let helper_name_io = format_ident!("{}_io", helper_name);
 
-    let mut added_macros = Vec::new();
+    let mut added_helpers = Vec::new();
 
     if has_input && has_output {
-        added_macros.push(quote! {
-            #[macro_export]
-            macro_rules! #macro_name_io {
-                ($input:expr, $output:expr $(,)?) => {
-                    #oz_bt_crate::CustomNode::<#struct_path>::new_io($input, $output)
-                };
+        added_helpers.push(quote! {
+            fn #helper_name_io(
+                input: impl Fn(&mut <#struct_path as Node>::Data) -> <#struct_path as Node>::Input + 'static,
+                output: std::rc::Rc<std::cell::RefCell<<#struct_path as Node>::Output>>,
+            ) -> Box<CustomNode<#struct_path>> {
+                #oz_bt_crate::CustomNode::<#struct_path>::new_io(input, output)
             }
         });
     }
 
     if has_input {
-        added_macros.push(quote! {
-            #[macro_export]
-            macro_rules! #macro_name_i {
-                ( $input:expr $(,)? ) => {
-                    #oz_bt_crate::CustomNode::<#struct_path>::new_i($input)
-                };
+        added_helpers.push(quote! {
+            fn #helper_name_i(
+                input: impl Fn(&mut <#struct_path as Node>::Data) -> <#struct_path as Node>::Input + 'static,
+            ) -> Box<CustomNode<#struct_path>> {
+                #oz_bt_crate::CustomNode::<#struct_path>::new_i(input)
             }
         });
     }
 
     if has_output {
-        added_macros.push(quote! {
-            #[macro_export]
-            macro_rules! #macro_name_o {
-                ( $output:expr $(,)? ) => {
-                    #oz_bt_crate::CustomNode::<#struct_path>::new_o($output)
-                };
+        added_helpers.push(quote! {
+            fn #helper_name_o(
+                output: std::rc::Rc<std::cell::RefCell<<#struct_path as Node>::Output>>,
+            ) -> Box<CustomNode<#struct_path>> {
+                #oz_bt_crate::CustomNode::<#struct_path>::new_o(output)
             }
         });
     }
@@ -127,14 +117,11 @@ pub fn node(attr: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #input_impl
 
-        #[macro_export]
-        macro_rules! #macro_name {
-            () => {
-                #oz_bt_crate::CustomNode::<#struct_path>::new()
-            };
+        fn #helper_name() -> Box<CustomNode<#struct_path>> {
+            #oz_bt_crate::CustomNode::<#struct_path>::new()
         }
 
-        #(#added_macros)*
+        #(#added_helpers)*
 
     };
 
